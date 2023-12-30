@@ -30,8 +30,7 @@ pub fn Init(){
 
     let mut entry = unsafe { Entry::load().unwrap() };
 
-    if(SysInfo::get_system_name().contains("mac") || SysInfo::get_system_name().contains("ios")){
-        #[cfg(any(target_os = "macos", target_os = "ios"))]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]{
         entry = ash_molten::load();
     }
     
