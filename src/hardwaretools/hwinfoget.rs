@@ -1,3 +1,8 @@
+/*
+    hwinfoget.rs
+    存放获取硬件信息的函数
+*/
+
 // 获取CPU名称
 pub fn get_cpu_name() -> String {
     // 使用sysinfo库
@@ -7,7 +12,7 @@ pub fn get_cpu_name() -> String {
     // 刷新CPU信息
     sys.refresh_cpu();
     // 返回CPU名称
-    sys.global_cpu_info().name().to_string()
+    sys.global_cpu_info().brand().to_string()
 }
 
 // 获取内存大小

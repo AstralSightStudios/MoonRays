@@ -1,3 +1,8 @@
+/*
+    baseinfolog.rs
+    在启动引擎时输出一些信息
+*/
+
 use log;
 # [path = "../hardwaretools/hwinfoget.rs"]
 mod HardwareInfoGetTools;

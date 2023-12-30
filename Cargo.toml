@@ -11,6 +11,7 @@ log = "0.4.20"
 log4rs = "1.2.0"
 sysinfo = "0.30.2"
 systemstat = "0.2.3"
+msgbox = "0.7.0"
 
 # 对于苹果设备使用molten，但代价是更久的build耗时
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]

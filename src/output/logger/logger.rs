@@ -1,3 +1,8 @@
+/*
+    logger.rs
+    日志工具，这点想必不用多说
+*/
+
 use log::LevelFilter;
 use log4rs::append::console::{ConsoleAppender, Target};
 use log4rs::append::file::FileAppender;
