@@ -7,12 +7,19 @@ edition = "2021"
 
 [dependencies]
 ash = "0.37.3"
+ash-window = "0.12.0"
 log = "0.4.20"
 log4rs = "1.2.0"
 sysinfo = "0.30.2"
 systemstat = "0.2.3"
 msgbox = "0.7.0"
+winit = "0.28.0"
+raw-window-handle = "0.5"
 
 # 对于苹果设备使用molten，但代价是更久的build耗时
+# 请注意，由于编译ash-molten需要xcodebuild，因此对于MacOS与iOS平台的编译必须在MacOS上进行
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 ash-molten = "0.16.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = {version = "0.52.0", features = ["Win32", "Win32_System_LibraryLoader","Win32_Foundation"]}

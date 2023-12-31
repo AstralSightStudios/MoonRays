@@ -4,16 +4,33 @@
 */
 
 use std::{ptr::null, ffi::CString, process::exit};
-use ash::{self, vk::{self, PhysicalDevice}, Entry, Instance};
+use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR}, Entry, Instance, Device, extensions::khr::Surface};
+use raw_window_handle::HasRawDisplayHandle;
+use winit::{event_loop::EventLoop, window::Window};
 #[path="../../base/sysinfo.rs"]
-mod SysInfo;
+pub(crate) mod SysInfo;
 #[path="../../hardwaretools/canrunchecker.rs"]
 mod CanRunChecker;
 #[path="../../tools.rs"]
 mod Tools;
+#[path="./vksurface.rs"]
+mod VkSurfaceTools;
+#[path="./vkwindow.rs"]
+mod VkWindowTools;
 
-pub fn CreateInstance() -> (Entry, Instance){
-    let vk_application_name_cstr = CString::new("Unknown Game").unwrap();
+pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, Device, (SurfaceKHR, Surface)){
+    let VkWindow = VkWindowTools::CreateWinitWindow();
+    let InstanceExts = ash_window::enumerate_required_extensions(VkWindow.1.raw_display_handle()).unwrap();
+    let VkReturn = CreateInstance(InstanceExts);
+    let VkPhysicalDevice = GetPhysicalDevice(&VkReturn.1);
+    let VkDevice = GetVkDevice(&VkReturn.1, VkPhysicalDevice);
+    let VkSurface = VkSurfaceTools::GetSurface(&VkReturn.1, &VkReturn.0, &VkWindow.0);
+
+    return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface);
+}
+
+pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: &[*const i8]) -> (Entry, Instance){
+    let vk_application_name_cstr = CString::new(crate::GAME_NAME).unwrap();
     let vk_engine_name_cstr = CString::new("MoonRays Engine").unwrap();
     let VK_APPLICATION_NAME = vk_application_name_cstr.as_ptr();
     let VK_ENGINE_NAME = vk_engine_name_cstr.as_ptr();
@@ -22,17 +39,18 @@ pub fn CreateInstance() -> (Entry, Instance){
         s_type: vk::StructureType::APPLICATION_INFO,
         p_next: null(),
         p_application_name: VK_APPLICATION_NAME,
-        application_version: 1,
+        application_version: crate::GAME_VERSION,
         p_engine_name: VK_ENGINE_NAME,
-        engine_version: 1,
+        engine_version: crate::ENGINE_VERSION,
         api_version: vk::API_VERSION_1_3,
     };
 
     let VK_INSTANCE_CREATE_INFO_DEFAULT: vk::InstanceCreateInfo = vk::InstanceCreateInfo{
         s_type: vk::StructureType::INSTANCE_CREATE_INFO,
-        p_next: null(),
         flags:  ash::vk::InstanceCreateFlags::default(),
         p_application_info: &VK_APPLICATION_INFO_DEFAULT,
+        pp_enabled_extension_names: VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION.as_ptr(),
+        enabled_extension_count: VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION.len() as u32,
         ..Default::default()
     };
 
@@ -67,7 +85,7 @@ pub fn CreateInstance() -> (Entry, Instance){
     }
 }
 
-pub fn GetPhysicalDevice(VkInstance: Instance) -> PhysicalDevice{
+pub fn GetPhysicalDevice(VkInstance: &Instance) -> PhysicalDevice{
     let device_list = unsafe { VkInstance.enumerate_physical_devices().unwrap() };
     let mut available_devices: Vec<PhysicalDevice> = vec![];
     let mut available_devices_prop: Vec<vk::PhysicalDeviceProperties> = vec![];
@@ -110,15 +128,32 @@ pub fn GetPhysicalDevice(VkInstance: Instance) -> PhysicalDevice{
     return return_device;
 }
 
-pub fn GetVkDevice(VkInstance: Instance,VkPhysicalDevice: PhysicalDevice){
-    let PhysicalDeviceQueueFamilyProperties = unsafe { VkInstance.get_physical_device_queue_family_properties(VkPhysicalDevice) };
+pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice) -> ash::Device{
+    let PhysicalDevicesQueueFamilyPropertiesVec = unsafe { VkInstance.get_physical_device_queue_family_properties(VkPhysicalDevice) };
+    let mut QueueFamilyPropIndex = 0;
+
+    for QueueFamilyProp in PhysicalDevicesQueueFamilyPropertiesVec{
+        if(QueueFamilyProp.queue_flags.contains(QueueFlags::GRAPHICS)){
+            log::info!("The family of queues located at index {} supports graphical features, so it has been selected", QueueFamilyPropIndex);
+            break;
+        }
+        QueueFamilyPropIndex += 1;
+    }
     
     let VK_DEVICE_QUEUE_CREATE_INFO_DEVICE = vk::DeviceQueueCreateInfo{
         s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
-        p_next: todo!(),
-        flags: todo!(),
-        queue_family_index: todo!(),
-        queue_count: todo!(),
-        p_queue_priorities: todo!(),
+        queue_family_index: QueueFamilyPropIndex,
+        ..Default::default()
     };
+
+    let VK_DEVICE_CREATE_INFO = vk::DeviceCreateInfo{
+        s_type: vk::StructureType::DEVICE_CREATE_INFO,
+        queue_create_info_count: 1,
+        p_queue_create_infos: &VK_DEVICE_QUEUE_CREATE_INFO_DEVICE,
+        ..Default::default()
+    };
+
+    let VkDevice = unsafe { VkInstance.create_device(VkPhysicalDevice, &VK_DEVICE_CREATE_INFO, None).unwrap() };
+
+    return VkDevice;
 }
