@@ -14,6 +14,8 @@ pub fn GetSurface(VkInstance: &Instance, entry: &Entry, window: &Window) -> (Sur
 
         let surface_fn = ash::extensions::khr::Surface::new(&entry, &VkInstance);
 
+        log::info!("Surface and SurfaceImpl was created. Surface: {:?}",surface);
+
         return (surface, surface_fn);
     }
 }

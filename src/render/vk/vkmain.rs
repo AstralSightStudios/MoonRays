@@ -4,7 +4,7 @@
 */
 
 use std::{ptr::null, ffi::CString, process::exit};
-use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR}, Entry, Instance, Device, extensions::khr::Surface};
+use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, SurfaceFormatKHR, PresentModeKHR, Extent2D, SurfaceCapabilitiesKHR, DeviceQueueCreateInfo, SwapchainKHR}, Entry, Instance, Device, extensions::{khr::{Surface, Swapchain}, self}};
 use raw_window_handle::HasRawDisplayHandle;
 use winit::{event_loop::EventLoop, window::Window};
 #[path="../../base/sysinfo.rs"]
@@ -17,19 +17,31 @@ mod Tools;
 mod VkSurfaceTools;
 #[path="./vkwindow.rs"]
 mod VkWindowTools;
+#[path="./vkdebugger.rs"]
+mod VkDebugger;
 
-pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, Device, (SurfaceKHR, Surface)){
+pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, (ash::Device, (u32, u32)), (SurfaceKHR, Surface)){
     let VkWindow = VkWindowTools::CreateWinitWindow();
-    let InstanceExts = ash_window::enumerate_required_extensions(VkWindow.1.raw_display_handle()).unwrap();
+    let mut InstanceExts = ash_window::enumerate_required_extensions(VkWindow.1.raw_display_handle()).unwrap().to_vec();
+    InstanceExts.push(
+        extensions::ext::DebugUtils::name().as_ptr()
+    );
     let VkReturn = CreateInstance(InstanceExts);
+    let VkDebuggerReturn = VkDebugger::GetVKDebugger(&VkReturn.1, &VkReturn.0);
     let VkPhysicalDevice = GetPhysicalDevice(&VkReturn.1);
-    let VkDevice = GetVkDevice(&VkReturn.1, VkPhysicalDevice);
+    let mut DeviceExts: Vec<*const i8> = vec![];
+    DeviceExts.push(
+        extensions::khr::Swapchain::name().as_ptr()
+    );
     let VkSurface = VkSurfaceTools::GetSurface(&VkReturn.1, &VkReturn.0, &VkWindow.0);
+    let VkDevice = GetVkDevice(&VkReturn.1, VkPhysicalDevice, &VkSurface.0, &VkSurface.1, DeviceExts);
+    let VkSwapChainSettings = GetSwapChainSettings(&VkPhysicalDevice, &VkSurface.0, &VkSurface.1, &VkWindow.0);
+    let VkSwapChain = GetSwapChain(&VkReturn.1, &VkDevice.0, &VkSurface.0, &VkSwapChainSettings, &VkDevice.1);
 
-    return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface);
+    return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface.clone());
 }
 
-pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: &[*const i8]) -> (Entry, Instance){
+pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>) -> (Entry, Instance){
     let vk_application_name_cstr = CString::new(crate::GAME_NAME).unwrap();
     let vk_engine_name_cstr = CString::new("MoonRays Engine").unwrap();
     let VK_APPLICATION_NAME = vk_application_name_cstr.as_ptr();
@@ -77,8 +89,8 @@ pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: &[*const i8]) ->
             }
             // TODO：这里未来还能添加更多错误处理
             else{
-                log::error!("An unknown error occurred while creating a Vulkan instance. Details:{}", err);
-                msgbox::create("MoonRaysEngine ERROR", ("An unknown error occurred while creating a Vulkan instance. \nDetails:".to_string() + &err.to_string()).as_str(), msgbox::IconType::Error).unwrap();
+                log::error!("An unknown error occurred while creating a Vulkan instance. Details: {}", err);
+                msgbox::create("MoonRaysEngine ERROR", ("An unknown error occurred while creating a Vulkan instance. \nDetails: ".to_string() + &err.to_string()).as_str(), msgbox::IconType::Error).unwrap();
             }
             exit(900000001);
         },
@@ -89,6 +101,7 @@ pub fn GetPhysicalDevice(VkInstance: &Instance) -> PhysicalDevice{
     let device_list = unsafe { VkInstance.enumerate_physical_devices().unwrap() };
     let mut available_devices: Vec<PhysicalDevice> = vec![];
     let mut available_devices_prop: Vec<vk::PhysicalDeviceProperties> = vec![];
+    // TODO: 通过配置文件定义此选项 让用户自己决定用哪张卡跑游戏
     let mut return_device: PhysicalDevice = device_list[0];
     let mut return_device_name: &String = &"".to_string();
     for device in device_list {
@@ -128,32 +141,179 @@ pub fn GetPhysicalDevice(VkInstance: &Instance) -> PhysicalDevice{
     return return_device;
 }
 
-pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice) -> ash::Device{
+pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice,VkSurface: &SurfaceKHR, SurfaceFN: &Surface, VK_DEVICE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>) -> (ash::Device,(u32, u32)){
     let PhysicalDevicesQueueFamilyPropertiesVec = unsafe { VkInstance.get_physical_device_queue_family_properties(VkPhysicalDevice) };
-    let mut QueueFamilyPropIndex = 0;
+    let mut QueueFamilyPropIndexGraphics = 0;
+    let mut QueueFamilyPropIndexPresent = 0;
+
+    let mut ScannedGraphicsQueue = false;
+    let mut ScannedPresentQueue = false;
 
     for QueueFamilyProp in PhysicalDevicesQueueFamilyPropertiesVec{
         if(QueueFamilyProp.queue_flags.contains(QueueFlags::GRAPHICS)){
-            log::info!("The family of queues located at index {} supports graphical features, so it has been selected", QueueFamilyPropIndex);
-            break;
+            if(!ScannedGraphicsQueue){
+                log::info!("The family of queues located at index {} supports graphical features, so it has been selected", QueueFamilyPropIndexGraphics);
+                ScannedGraphicsQueue = true;
+            }
         }
-        QueueFamilyPropIndex += 1;
+        if(!ScannedGraphicsQueue){
+            QueueFamilyPropIndexGraphics += 1;
+        }
+
+        if(unsafe { SurfaceFN.get_physical_device_surface_support(VkPhysicalDevice, QueueFamilyPropIndexPresent, *VkSurface).unwrap() }){
+            if(!ScannedPresentQueue){
+                log::info!("The family of queues located at index {} supports surface, so it has been selected", QueueFamilyPropIndexPresent);
+                ScannedPresentQueue = true;
+            }
+        }
+        if(!ScannedPresentQueue){
+            QueueFamilyPropIndexPresent += 1;
+        }
     }
     
-    let VK_DEVICE_QUEUE_CREATE_INFO_DEVICE = vk::DeviceQueueCreateInfo{
-        s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
-        queue_family_index: QueueFamilyPropIndex,
-        ..Default::default()
-    };
+    // TODO: 使用循环实现批量创建
+    let VK_DEVICE_QUEUE_CREATE_INFO_DEVICE:Vec<DeviceQueueCreateInfo> = vec![
+        vk::DeviceQueueCreateInfo{
+            s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
+            queue_family_index: QueueFamilyPropIndexGraphics,
+            ..Default::default()
+        },
+        vk::DeviceQueueCreateInfo{
+            s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
+            queue_family_index: QueueFamilyPropIndexPresent,
+            ..Default::default()
+        },
+    ];
 
     let VK_DEVICE_CREATE_INFO = vk::DeviceCreateInfo{
         s_type: vk::StructureType::DEVICE_CREATE_INFO,
         queue_create_info_count: 1,
-        p_queue_create_infos: &VK_DEVICE_QUEUE_CREATE_INFO_DEVICE,
+        p_queue_create_infos: VK_DEVICE_QUEUE_CREATE_INFO_DEVICE.as_ptr(),
+        pp_enabled_extension_names: VK_DEVICE_CREATE_INFO_ENABLE_EXTENSION.as_ptr(),
+        enabled_extension_count: VK_DEVICE_CREATE_INFO_ENABLE_EXTENSION.len() as u32,
         ..Default::default()
     };
 
     let VkDevice = unsafe { VkInstance.create_device(VkPhysicalDevice, &VK_DEVICE_CREATE_INFO, None).unwrap() };
 
-    return VkDevice;
+    return (VkDevice, (QueueFamilyPropIndexGraphics, QueueFamilyPropIndexPresent));
+}
+
+pub fn GetSwapChainSettings(Device: &PhysicalDevice, VkSurface: &SurfaceKHR, SurfaceFN: &Surface, window: &Window) -> (SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, PresentModeKHR){
+    unsafe{
+        let SurfaceCapabilities = SurfaceFN.get_physical_device_surface_capabilities(*Device, *VkSurface).unwrap();
+        let DeviceSupportedSurfaceFormats = SurfaceFN.get_physical_device_surface_formats(*Device, *VkSurface).unwrap();
+        let DeviceSupportedSurfacePresentModes = SurfaceFN.get_physical_device_surface_present_modes(*Device, *VkSurface).unwrap();
+
+        // 两个变量默认都为支持的第一个选项 会在下面的循环中修改为最优值 因为如果一个显卡连SRGB都不支持 那接下来也只是能跑就行了
+        let mut SelectedSurfaceFormat: SurfaceFormatKHR = DeviceSupportedSurfaceFormats[0];
+        let mut SelectedSurfacePresentMode: PresentModeKHR = DeviceSupportedSurfacePresentModes[0];
+
+        let SelectedSwapExtent: Extent2D = ChooseSwapExtent(&SurfaceCapabilities, window);
+
+        if (DeviceSupportedSurfaceFormats.len() < 1 || DeviceSupportedSurfacePresentModes.len() < 1){
+            log::error!("The device does not support any SurfaceFormat or SurfacePresentMode and the app will most likely fail to start!");
+            msgbox::create("MoonRaysEngine ERROR", "The device does not support any SurfaceFormat or SurfacePresentMode and the app will most likely fail to start!\nYou may need to update your graphics card driver or upgrade your graphics card.", msgbox::IconType::Error).unwrap();
+        }
+
+        for SurfaceFormat in DeviceSupportedSurfaceFormats{
+            // 默认优先选择SRGB
+            // TODO: 加入HDR支持
+            if(SurfaceFormat.format == vk::Format::B8G8R8A8_SRGB && SurfaceFormat.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR){
+                log::info!("Chose SurfaceFormat=B8G8R8A8_SRGB ColorSpace=SRGB");
+                SelectedSurfaceFormat = SurfaceFormat;
+            }
+        }
+
+        for SurfacePresentMode in DeviceSupportedSurfacePresentModes{
+            // 默认使用VK_PRESENT_MODE_FIFO_KHR（也就是 垂直同步）
+            // TODO: 通过配置文件定义此选项 就像普通游戏让你选择是否开启垂直同步一样
+            if(SurfacePresentMode == vk::PresentModeKHR::FIFO){
+                log::info!("Chose SurfacePresentMode=FIFO");
+                SelectedSurfacePresentMode = SurfacePresentMode;
+            }
+        }
+
+        return (SurfaceCapabilities,SelectedSwapExtent, SelectedSurfaceFormat, SelectedSurfacePresentMode);
+    }
+}
+
+pub fn ChooseSwapExtent(capabilities: &vk::SurfaceCapabilitiesKHR, window: &Window) -> vk::Extent2D {
+    if capabilities.current_extent.width != u32::MAX {
+        capabilities.current_extent
+    } else {
+        let (width, height) = (window.inner_size().width, window.inner_size().height);
+
+        let mut actual_extent = vk::Extent2D {
+            width: width as u32,
+            height: height as u32,
+        };
+
+        actual_extent.width = actual_extent.width.clamp(
+            capabilities.min_image_extent.width,
+            capabilities.max_image_extent.width,
+        );
+        actual_extent.height = actual_extent.height.clamp(
+            capabilities.min_image_extent.height,
+            capabilities.max_image_extent.height,
+        );
+
+        actual_extent
+    }
+}
+
+pub fn GetSwapChain(instance: &Instance, device: &Device, VkSurface: &SurfaceKHR, SwapChainSettings: &(SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, PresentModeKHR), _QueueFamilyIndices: &(u32, u32)) -> (SwapchainKHR, Swapchain){
+    let mut swapchain_minImageCount = 4;
+    if(SwapChainSettings.0.max_image_count != 0 && swapchain_minImageCount > SwapChainSettings.0.max_image_count){
+        swapchain_minImageCount = SwapChainSettings.0.max_image_count;
+    }
+
+    // 类型转换
+    // TODO: 未来这里应该直接就是一个Vec
+    let QueueFamilyIndices = vec![_QueueFamilyIndices.0, _QueueFamilyIndices.1];
+
+    // 为了防止指针指向的变量被释放 导致Vulkan不能访问 这里先存储一下
+    let CreateInfo_ImageFormat = SwapChainSettings.2.format;
+    let CreateInfo_ColorSpace = SwapChainSettings.2.color_space;
+    let CreateInfo_Extent = SwapChainSettings.1;
+    let mut CreateInfo_PreTransform;
+    if (SwapChainSettings.0.supported_transforms.contains(vk::SurfaceTransformFlagsKHR::IDENTITY)){
+        CreateInfo_PreTransform = vk::SurfaceTransformFlagsKHR::IDENTITY;
+    }
+    else {
+        CreateInfo_PreTransform = SwapChainSettings.0.current_transform;
+    }
+    let CreateInfo_PresentMode = SwapChainSettings.3;
+
+    log::info!("Prepare to create swapchain, QueueFamilyIndices[0]={} QueueFamilyIndices[1]={}", &QueueFamilyIndices[0], &QueueFamilyIndices[1]);
+
+    let VK_SWAPCHAIN_CREATE_INFO_DEFAULT = vk::SwapchainCreateInfoKHR {
+        s_type: vk::StructureType::SWAPCHAIN_CREATE_INFO_KHR,
+        surface: VkSurface.to_owned(),
+        min_image_count: swapchain_minImageCount,
+        image_format: CreateInfo_ImageFormat,
+        image_color_space: CreateInfo_ColorSpace,
+        image_extent: CreateInfo_Extent,
+        image_array_layers: 1, // TODO: 对3D应用程序做出更好的适配
+        image_usage: vk::ImageUsageFlags::COLOR_ATTACHMENT,
+        image_sharing_mode: vk::SharingMode::EXCLUSIVE,
+        queue_family_index_count: 2,
+        p_queue_family_indices: Box::into_raw(QueueFamilyIndices.into_boxed_slice()) as *const u32, // 使用Box::into_raw来获取一个不会被释放的指针
+        pre_transform: CreateInfo_PreTransform,
+        composite_alpha: vk::CompositeAlphaFlagsKHR::OPAQUE, // TODO: 支持Alpha通道
+        present_mode: CreateInfo_PresentMode,
+        clipped: vk::TRUE,
+        ..Default::default()
+    };
+
+    let VkSwapChainFN = extensions::khr::Swapchain::new(instance, device);
+    log::info!("SwapChainFN was created");
+    let VkSwapChain = unsafe {
+        VkSwapChainFN
+            .create_swapchain(&VK_SWAPCHAIN_CREATE_INFO_DEFAULT, None)
+            .unwrap()
+    };
+    log::info!("SwapChain was created");
+
+    return (VkSwapChain, VkSwapChainFN);
 }
