@@ -8,7 +8,15 @@ unsafe extern "system" fn VKDebuggerCallback(VkDbgServerityFlags: vk::DebugUtils
     let binding = CStr::from_ptr(VkDbgCallbackData.read().p_message);
     let Message = binding.to_string_lossy();
 
-    log::info!("Vulkan Callback: From {} > {}", MessageIdName, Message);
+    if(Message.contains("Error") || Message.contains("error")){
+        log::error!("Vulkan Callback: From {} > {}", MessageIdName, Message);
+    }
+    else if (Message.contains("Warning") || Message.contains("warning")) {
+        log::warn!("Vulkan Callback: From {} > {}", MessageIdName, Message);
+    }
+    else{
+        log::info!("Vulkan Callback: From {} > {}", MessageIdName, Message);
+    }
 
     return vk::TRUE;
 }
@@ -24,7 +32,12 @@ pub fn GetVKDebugger(VkInstance: &Instance, VkEnrty: &Entry) -> DebugUtilsMessen
             ash::vk::DebugUtilsMessageSeverityFlagsEXT::WARNING |
             ash::vk::DebugUtilsMessageSeverityFlagsEXT::ERROR
         ),
-        message_type: ash::vk::DebugUtilsMessageTypeFlagsEXT::GENERAL,
+        message_type: (
+            ash::vk::DebugUtilsMessageTypeFlagsEXT::DEVICE_ADDRESS_BINDING |
+            ash::vk::DebugUtilsMessageTypeFlagsEXT::GENERAL |
+            ash::vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE |
+            ash::vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION
+        ),
         pfn_user_callback: Some(VKDebuggerCallback),
         ..Default::default()
     };

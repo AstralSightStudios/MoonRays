@@ -3,7 +3,7 @@
     作为Vulkan图形API的主入口，做一些基础操作例如创建Instance等等
 */
 
-use std::{ptr::null, ffi::CString, process::exit};
+use std::{ptr::null, ffi::{CString, CStr}, process::exit};
 use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, SurfaceFormatKHR, PresentModeKHR, Extent2D, SurfaceCapabilitiesKHR, DeviceQueueCreateInfo, SwapchainKHR}, Entry, Instance, Device, extensions::{khr::{Surface, Swapchain}, self}};
 use raw_window_handle::HasRawDisplayHandle;
 use winit::{event_loop::EventLoop, window::Window};
@@ -26,7 +26,13 @@ pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, 
     InstanceExts.push(
         extensions::ext::DebugUtils::name().as_ptr()
     );
-    let VkReturn = CreateInstance(InstanceExts);
+    let mut InstanceLayers: Vec<*const i8> = vec![
+        #[cfg(debug_assertions)]{
+            // 对于Debug编译，启用Vulkan验证层
+            "VK_LAYER_KHRONOS_validation".as_ptr() as *const i8
+        }
+    ];
+    let VkReturn = CreateInstance(InstanceExts,InstanceLayers);
     let VkDebuggerReturn = VkDebugger::GetVKDebugger(&VkReturn.1, &VkReturn.0);
     let VkPhysicalDevice = GetPhysicalDevice(&VkReturn.1);
     let mut DeviceExts: Vec<*const i8> = vec![];
@@ -41,7 +47,7 @@ pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, 
     return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface.clone());
 }
 
-pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>) -> (Entry, Instance){
+pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, VK_INSTANCE_CREATE_INFO_ENABLE_LAYERS: Vec<*const i8>) -> (Entry, Instance){
     let vk_application_name_cstr = CString::new(crate::GAME_NAME).unwrap();
     let vk_engine_name_cstr = CString::new("MoonRays Engine").unwrap();
     let VK_APPLICATION_NAME = vk_application_name_cstr.as_ptr();
@@ -63,6 +69,8 @@ pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>) 
         p_application_info: &VK_APPLICATION_INFO_DEFAULT,
         pp_enabled_extension_names: VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION.as_ptr(),
         enabled_extension_count: VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION.len() as u32,
+        enabled_layer_count: VK_INSTANCE_CREATE_INFO_ENABLE_LAYERS.len() as u32,
+        pp_enabled_layer_names: VK_INSTANCE_CREATE_INFO_ENABLE_LAYERS.as_ptr(),
         ..Default::default()
     };
 
@@ -72,6 +80,13 @@ pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>) 
     // 该操作及其所用的依赖（ash_molten）已被标记为只对MacOS和iOS启用与编译
     #[cfg(any(target_os = "macos", target_os = "ios"))]{
         entry = ash_molten::load();
+    }
+
+    log::info!("Available layers:");
+
+    for LayerProp in entry.enumerate_instance_layer_properties().unwrap(){
+        let LayerName = unsafe { CStr::from_ptr(LayerProp.layer_name.as_ptr()).to_str().unwrap() };
+        log::info!("   - {}", LayerName);
     }
     
     let Match_VkInstance = unsafe { Entry::create_instance(&entry ,&VK_INSTANCE_CREATE_INFO_DEFAULT, None) };
@@ -145,6 +160,8 @@ pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice,VkSur
     let PhysicalDevicesQueueFamilyPropertiesVec = unsafe { VkInstance.get_physical_device_queue_family_properties(VkPhysicalDevice) };
     let mut QueueFamilyPropIndexGraphics = 0;
     let mut QueueFamilyPropIndexPresent = 0;
+    let mut QueueFamilyPropCountGraphics = 0;
+    let mut QueueFamilyPropCountPresent = 0;
 
     let mut ScannedGraphicsQueue = false;
     let mut ScannedPresentQueue = false;
@@ -152,7 +169,8 @@ pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice,VkSur
     for QueueFamilyProp in PhysicalDevicesQueueFamilyPropertiesVec{
         if(QueueFamilyProp.queue_flags.contains(QueueFlags::GRAPHICS)){
             if(!ScannedGraphicsQueue){
-                log::info!("The family of queues located at index {} supports graphical features, so it has been selected", QueueFamilyPropIndexGraphics);
+                log::info!("The family of queues located at index {} supports graphical features, so it has been selected. QueueCount={}", QueueFamilyPropIndexGraphics, &QueueFamilyProp.queue_count);
+                QueueFamilyPropCountGraphics = QueueFamilyProp.queue_count;
                 ScannedGraphicsQueue = true;
             }
         }
@@ -162,7 +180,8 @@ pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice,VkSur
 
         if(unsafe { SurfaceFN.get_physical_device_surface_support(VkPhysicalDevice, QueueFamilyPropIndexPresent, *VkSurface).unwrap() }){
             if(!ScannedPresentQueue){
-                log::info!("The family of queues located at index {} supports surface, so it has been selected", QueueFamilyPropIndexPresent);
+                log::info!("The family of queues located at index {} supports surface, so it has been selected. QueueCount={}", QueueFamilyPropIndexPresent, &QueueFamilyProp.queue_count);
+                QueueFamilyPropCountPresent = QueueFamilyProp.queue_count;
                 ScannedPresentQueue = true;
             }
         }
@@ -171,16 +190,24 @@ pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice,VkSur
         }
     }
     
+    // TODO: 实现自动分配优先级以获得更好的性能
+    let GraphicsQueuePriorities: Vec<f32> = vec![1.0; QueueFamilyPropCountGraphics.try_into().unwrap()];
+    let PresentQueuePriorities: Vec<f32> = vec![0.9; QueueFamilyPropCountPresent.try_into().unwrap()];
+
     // TODO: 使用循环实现批量创建
     let VK_DEVICE_QUEUE_CREATE_INFO_DEVICE:Vec<DeviceQueueCreateInfo> = vec![
         vk::DeviceQueueCreateInfo{
             s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
             queue_family_index: QueueFamilyPropIndexGraphics,
+            queue_count: QueueFamilyPropCountGraphics,
+            p_queue_priorities: GraphicsQueuePriorities.as_ptr(),
             ..Default::default()
         },
         vk::DeviceQueueCreateInfo{
             s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
             queue_family_index: QueueFamilyPropIndexPresent,
+            queue_count: QueueFamilyPropCountPresent,
+            p_queue_priorities: PresentQueuePriorities.as_ptr(),
             ..Default::default()
         },
     ];
