@@ -8,6 +8,8 @@ unsafe extern "system" fn VKDebuggerCallback(VkDbgServerityFlags: vk::DebugUtils
     let binding = CStr::from_ptr(VkDbgCallbackData.read().p_message);
     let Message = binding.to_string_lossy();
 
+    // 判断错误信息中是否包含错误类型关键字以用对应的方式输出log
+    // 但事实上就算是error也无所谓 只要验证层没panic并且报错不影响效果都可以忽略
     if(Message.contains("Error") || Message.contains("error")){
         log::error!("Vulkan Callback: From {} > {}", MessageIdName, Message);
     }

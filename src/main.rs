@@ -19,6 +19,8 @@ mod Logger;
 mod BaseInfoLogger;
 # [path="./render/vk/vkmain.rs"]
 mod VKRenderMain;
+# [path="./base/directoryinit.rs"]
+mod DirectoryInit;
 
 const GAME_NAME: &str = "MoonRaysEngine SampleGame";
 const GAME_VERSION: u32 = 1;
@@ -30,6 +32,8 @@ fn main() {
     Logger::InitLogger();
     // 打印电脑配置信息
     BaseInfoLogger::Log();
+    // 初始化引擎路径
+    DirectoryInit::Init();
     // 初始化Vulkan渲染引擎
     let LoadedTuple = VKRenderMain::LoadVK();
 

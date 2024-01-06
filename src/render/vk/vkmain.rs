@@ -4,7 +4,7 @@
 */
 
 use std::{ptr::null, ffi::{CString, CStr}, process::exit};
-use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, SurfaceFormatKHR, PresentModeKHR, Extent2D, SurfaceCapabilitiesKHR, DeviceQueueCreateInfo, SwapchainKHR}, Entry, Instance, Device, extensions::{khr::{Surface, Swapchain}, self}};
+use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, SurfaceFormatKHR, PresentModeKHR, Extent2D, SurfaceCapabilitiesKHR, DeviceQueueCreateInfo, SwapchainKHR, Image, ImageView, ImageViewCreateInfo, ComponentMapping, ImageSubresourceRange}, Entry, Instance, Device, extensions::{khr::{Surface, Swapchain}, self}};
 use raw_window_handle::HasRawDisplayHandle;
 use winit::{event_loop::EventLoop, window::Window};
 #[path="../../base/sysinfo.rs"]
@@ -19,8 +19,14 @@ mod VkSurfaceTools;
 mod VkWindowTools;
 #[path="./vkdebugger.rs"]
 mod VkDebugger;
+#[path="./vkpipline.rs"]
+mod VkPipline;
+#[path="../spirv_compiler.rs"]
+mod SpirvCompiler;
 
 pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, (ash::Device, (u32, u32)), (SurfaceKHR, Surface)){
+    SpirvCompiler::CompileBaseShaders();
+
     let VkWindow = VkWindowTools::CreateWinitWindow();
     let mut InstanceExts = ash_window::enumerate_required_extensions(VkWindow.1.raw_display_handle()).unwrap().to_vec();
     InstanceExts.push(
@@ -343,4 +349,38 @@ pub fn GetSwapChain(instance: &Instance, device: &Device, VkSurface: &SurfaceKHR
     log::info!("SwapChain was created");
 
     return (VkSwapChain, VkSwapChainFN);
+}
+
+pub fn GetSwapChainImages(VkSwapChain: SwapchainKHR, VkSwapChainFN: Swapchain) -> Vec<Image>{
+    let VkSwapChainImages = unsafe { VkSwapChainFN.get_swapchain_images(VkSwapChain).unwrap() };
+    return VkSwapChainImages;
+}
+
+pub fn GetSwapChainImageViews(VkDevice: &Device, VkSwapChainImages: Vec<Image>, SwapChainSettings: &(SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, PresentModeKHR)){
+    let mut VkSwapChainImageViews: Vec<ImageView> = vec![];
+
+    for VkImage in VkSwapChainImages{
+        let VK_IMAGE_VIEW_CREATE_INFO_DEFAULT = ImageViewCreateInfo{
+            s_type: vk::StructureType::IMAGE_VIEW_CREATE_INFO,
+            image: VkImage,
+            view_type: vk::ImageViewType::TYPE_2D, // TODO: 动态可调的ImageView类型
+            format: SwapChainSettings.2.format,
+            components: ComponentMapping{
+                r: vk::ComponentSwizzle::IDENTITY,
+                g: vk::ComponentSwizzle::IDENTITY,
+                b: vk::ComponentSwizzle::IDENTITY,
+                a: vk::ComponentSwizzle::IDENTITY,
+            },
+            subresource_range: ImageSubresourceRange{ // TODO: 对于3D程序做调整
+                aspect_mask: vk::ImageAspectFlags::COLOR,
+                base_mip_level: 0,
+                level_count: 1,
+                base_array_layer: 0,
+                layer_count: 1,
+            },
+            ..Default::default()
+        };
+
+        VkSwapChainImageViews.push(unsafe { VkDevice.create_image_view(&VK_IMAGE_VIEW_CREATE_INFO_DEFAULT, None).unwrap() });
+    }
 }

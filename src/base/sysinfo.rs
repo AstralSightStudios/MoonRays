@@ -3,7 +3,7 @@
     获取系统在软件层面上的一些信息
 */
 
-use std::{any::type_name, ffi::CString, os::raw::c_void};
+use std::os::raw::c_void;
 
 use windows::Win32::Foundation::HMODULE;
 
