@@ -1,4 +1,4 @@
-use winit::{event::{WindowEvent, Event, VirtualKeyCode}, event_loop::{ControlFlow, EventLoop}, window::Window};
+use winit::{event::{WindowEvent, Event, VirtualKeyCode}, event_loop::{ControlFlow, EventLoop}, window::Window, platform::run_return::EventLoopExtRunReturn};
 use ash::{self, vk};
 
 #[path="./vk/vkmain.rs"]
@@ -24,11 +24,11 @@ impl RenderTools{
 
     pub fn DoDraw(self){
         if(self.RenderEngine == RenderEngines::Vulkan){
-            let VkLoadTuple: ((Window, EventLoop<()>), (ash::Entry, ash::Instance), vk::PhysicalDevice, (ash::Device, (u32, u32)), (vk::SurfaceKHR, ash::extensions::khr::Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, ash::extensions::khr::Swapchain), Vec<ash::vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore)) = VKRenderMain::LoadVK();
+            let mut VkLoadTuple: ((Window, EventLoop<()>), (ash::Entry, ash::Instance), vk::PhysicalDevice, (ash::Device, (u32, u32)), (vk::SurfaceKHR, ash::extensions::khr::Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, ash::extensions::khr::Swapchain), Vec<ash::vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore)) = VKRenderMain::LoadVK();
             let GraphicsQueue = unsafe { VkLoadTuple.3.0.get_device_queue(VkLoadTuple.3.1.0, 0) };
             let PresentQueue = unsafe{ VkLoadTuple.3.0.get_device_queue(VkLoadTuple.3.1.1, 0) };
             log::info!("Got Graphics and Present Queue");
-            VkLoadTuple.0.1.run(move |event, _, control_flow| match event {
+            VkLoadTuple.0.1.run_return(move |event, _, control_flow| match event {
                 winit::event::Event::WindowEvent {
                     event:
                         WindowEvent::CloseRequested
@@ -41,13 +41,11 @@ impl RenderTools{
                             ..
                         },
                     window_id: _,
-                } => {
+                }
+                 => {
                     *control_flow = ControlFlow::Exit;
                 }
-                Event::LoopDestroyed => {
-                    //unsafe { &LoadedTuples.4.1.destroy_surface(LoadedTuples.4.0, None) };
-                }
-                _ => {
+                Event::RedrawRequested(_) => {
                         // Vulkan帧绘制
                         // 主循环
                         //log::info!("loop");
@@ -95,7 +93,13 @@ impl RenderTools{
                 
                         unsafe { VkLoadTuple.6.1.queue_present(PresentQueue, &DrawPresentInfo).unwrap() };
                 }
-            })
+                Event::LoopDestroyed => {
+                    //unsafe { &LoadedTuples.4.1.destroy_surface(LoadedTuples.4.0, None) };
+                }
+                _ => {
+                        
+                }
+            });
         }
     }
 }
