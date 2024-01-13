@@ -11,20 +11,28 @@
 #! [feature(strict_provenance)]
 #! [feature(ptr_metadata)]
 
-use winit::{event::{WindowEvent, Event, VirtualKeyCode}, event_loop::ControlFlow};
-
 # [path="./output/logger/logger.rs"]
 mod Logger;
 # [path="./base/baseinfolog.rs"]
 mod BaseInfoLogger;
-# [path="./render/vk/vkmain.rs"]
-mod VKRenderMain;
+# [path="./render/render.rs"]
+mod RenderMod;
 # [path="./base/directoryinit.rs"]
 mod DirectoryInit;
+#[path="./tools.rs"]
+mod Tools;
+
+use RenderMod::RenderTools;
 
 const GAME_NAME: &str = "MoonRaysEngine SampleGame";
 const GAME_VERSION: u32 = 1;
 const ENGINE_VERSION: u32 = 1;
+const RENDER_ENGINE: RenderMod::RenderEngines = RenderMod::RenderEngines::Vulkan;
+const RENDER_VK_CLEAR_COLOR: ash::vk::ClearValue = ash::vk::ClearValue{
+    color: ash::vk::ClearColorValue{
+        float32: [0.0,0.0,0.0,0.0]
+    }
+};
 
 fn main() {
     // 初始化基础组件
@@ -34,28 +42,7 @@ fn main() {
     BaseInfoLogger::Log();
     // 初始化引擎路径
     DirectoryInit::Init();
-    // 初始化Vulkan渲染引擎
-    let LoadedTuple = VKRenderMain::LoadVK();
-
-    LoadedTuple.0.1.run(move |event, _, control_flow| match event {
-        winit::event::Event::WindowEvent {
-            event:
-                WindowEvent::CloseRequested
-                | WindowEvent::KeyboardInput {
-                    input:
-                        winit::event::KeyboardInput {
-                            virtual_keycode: Some(VirtualKeyCode::Escape),
-                            ..
-                        },
-                    ..
-                },
-            window_id: _,
-        } => {
-            *control_flow = ControlFlow::Exit;
-        }
-        Event::LoopDestroyed => {
-            unsafe { LoadedTuple.4.1.destroy_surface(LoadedTuple.4.0, None) };
-        }
-        _ => {}
-    })
+    // 初始化渲染引擎
+    let Render = RenderTools::new(RENDER_ENGINE);
+    Render.DoDraw();
 }

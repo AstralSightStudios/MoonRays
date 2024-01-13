@@ -11,13 +11,13 @@ unsafe extern "system" fn VKDebuggerCallback(VkDbgServerityFlags: vk::DebugUtils
     // 判断错误信息中是否包含错误类型关键字以用对应的方式输出log
     // 但事实上就算是error也无所谓 只要验证层没panic并且报错不影响效果都可以忽略
     if(Message.contains("Error") || Message.contains("error")){
-        log::error!("Vulkan Callback: From {} > {}", MessageIdName, Message);
+        log::error!("Vulkan Callback: From \"{}\" > {}", MessageIdName, Message);
     }
     else if (Message.contains("Warning") || Message.contains("warning")) {
-        log::warn!("Vulkan Callback: From {} > {}", MessageIdName, Message);
+        log::warn!("Vulkan Callback: From \"{}\" > {}", MessageIdName, Message);
     }
     else{
-        log::info!("Vulkan Callback: From {} > {}", MessageIdName, Message);
+        log::info!("Vulkan Callback: From \"{}\" > {}", MessageIdName, Message);
     }
 
     return vk::TRUE;

@@ -4,20 +4,17 @@ use std::fs;
 pub fn CompileBaseShaders(){
     log::info!("Start compiling base shader...");
 
-    let BaseShaders = vec![
-        "shaders/basevert.glsl",
-        "shaders/basefrag.glsl"
-    ];
+    let BaseShadersGetRet = crate::Tools::GetBaseShaders();
 
-    let BaseShadersName = vec![
-        "basevert.glsl",
-        "basefrag.glsl"
-    ];
+    let mut BaseShaders = BaseShadersGetRet.0;
+
+    let mut BaseShadersName = BaseShadersGetRet.1;
 
     let mut index = 0;
     for _BaseShaderPath in BaseShaders{
         let mut BaseShaderPath = _BaseShaderPath;
         let mut ShaderKindCompile = shaderc::ShaderKind::Vertex;
+        // TODO: 支持更多着色器类型
         if(BaseShaderPath.contains("frag")){
             ShaderKindCompile = shaderc::ShaderKind::Fragment;
         }
