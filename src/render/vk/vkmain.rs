@@ -36,7 +36,66 @@ mod VkSemaphores;
 #[path="../spirv_compiler.rs"]
 mod SpirvCompiler;
 
-pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, (ash::Device, (u32, u32)), (SurfaceKHR, Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, extensions::khr::Swapchain), Vec<vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore)){
+pub struct QueueFamilyIndices{
+    pub GraphicsQueueIndex: u32,
+    pub PresentQueueIndex: u32
+}
+
+pub struct RenderEngineVK{
+    pub WinitWindow: (Window, EventLoop<()>),
+    pub VkBase: (Entry, Instance),
+    pub VkPhysicalDevice: PhysicalDevice,
+    pub VkDevice: ash::Device,
+    pub VkQueueFamilyIndicesGraphicsAndPresent: QueueFamilyIndices,
+    pub VkSurface: (SurfaceKHR, Surface),
+    pub VkSwapChainSettings: (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR),
+    pub VkSwapChain: (vk::SwapchainKHR, extensions::khr::Swapchain),
+    pub VkImages: Vec<vk::Image>,
+    pub VkImageViews: Vec<vk::ImageView>,
+    pub VkPipelineShaderStages: Vec<vk::PipelineShaderStageCreateInfo>,
+    pub VkPipeline: Vec<vk::Pipeline>,
+    pub VkRenderPass: vk::RenderPass,
+    pub VkViewport: Vec<vk::Viewport>,
+    pub VkRect2DRenderArea: Vec<vk::Rect2D>,
+    pub VkFrameBuffers: Vec<vk::Framebuffer>,
+    pub VkCommandPool: vk::CommandPool,
+    pub VkCommandBuffers: Vec<vk::CommandBuffer>,
+    pub VkSemaphoreImageAvailable: vk::Semaphore,
+    pub VkSemaphoreRenderFinished: vk::Semaphore
+}
+
+impl RenderEngineVK{
+    pub fn LoadVK() -> RenderEngineVK{
+        let LoadResult = LoadVKTuple();
+        return RenderEngineVK{
+            WinitWindow: LoadResult.0,
+            VkBase: LoadResult.1,
+            VkPhysicalDevice: LoadResult.2,
+            VkDevice: LoadResult.3.0,
+            VkQueueFamilyIndicesGraphicsAndPresent: QueueFamilyIndices{
+                GraphicsQueueIndex: LoadResult.3.1.0,
+                PresentQueueIndex: LoadResult.3.1.1,
+            },
+            VkSurface: LoadResult.4,
+            VkSwapChainSettings: LoadResult.5,
+            VkSwapChain: LoadResult.6,
+            VkImages: LoadResult.7,
+            VkImageViews: LoadResult.8,
+            VkPipelineShaderStages: LoadResult.9,
+            VkPipeline: LoadResult.10.0,
+            VkRenderPass: LoadResult.10.1,
+            VkViewport: LoadResult.10.2,
+            VkRect2DRenderArea: LoadResult.10.3,
+            VkFrameBuffers: LoadResult.11,
+            VkCommandPool: LoadResult.12,
+            VkCommandBuffers: LoadResult.13,
+            VkSemaphoreImageAvailable: LoadResult.14.0,
+            VkSemaphoreRenderFinished: LoadResult.14.1
+        }
+    }
+}
+
+fn LoadVKTuple() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, (ash::Device, (u32, u32)), (SurfaceKHR, Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, extensions::khr::Swapchain), Vec<vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore)){
     SpirvCompiler::CompileBaseShaders();
 
     let VkWindow = VkWindowTools::CreateWinitWindow();
@@ -45,12 +104,10 @@ pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, 
         extensions::ext::DebugUtils::name().as_ptr()
     );
     let mut InstanceLayers: Vec<*const i8> = vec![
-        /* 
         #[cfg(debug_assertions)]{
             // 对于Debug编译，启用Vulkan验证层
             "VK_LAYER_KHRONOS_validation".as_ptr() as *const i8
         }
-        */
     ];
     let VkReturn = CreateInstance(InstanceExts,InstanceLayers);
     let VkDebuggerReturn = VkDebugger::GetVKDebugger(&VkReturn.1, &VkReturn.0);
@@ -85,7 +142,7 @@ pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, 
     return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface.clone(), VkSwapChainSettings, VkSwapChain, VkSwapChainImages, VkSwapChainImageViews, VkBaseShaderStages, VkGraphicsPipeline, VkSwapChainFrameBuffers, VkCommandPool, VkCommandBuffers, VkSemaphore);
 }
 
-pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, VK_INSTANCE_CREATE_INFO_ENABLE_LAYERS: Vec<*const i8>) -> (Entry, Instance){
+fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, VK_INSTANCE_CREATE_INFO_ENABLE_LAYERS: Vec<*const i8>) -> (Entry, Instance){
     let vk_application_name_cstr = CString::new(crate::GAME_NAME).unwrap();
     let vk_engine_name_cstr = CString::new("MoonRays Engine").unwrap();
     let VK_APPLICATION_NAME = vk_application_name_cstr.as_ptr();
@@ -150,7 +207,7 @@ pub fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, 
     }
 }
 
-pub fn GetPhysicalDevice(VkInstance: &Instance) -> PhysicalDevice{
+fn GetPhysicalDevice(VkInstance: &Instance) -> PhysicalDevice{
     let device_list = unsafe { VkInstance.enumerate_physical_devices().unwrap() };
     let mut available_devices: Vec<PhysicalDevice> = vec![];
     let mut available_devices_prop: Vec<vk::PhysicalDeviceProperties> = vec![];
@@ -194,7 +251,7 @@ pub fn GetPhysicalDevice(VkInstance: &Instance) -> PhysicalDevice{
     return return_device;
 }
 
-pub fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice,VkSurface: &SurfaceKHR, SurfaceFN: &Surface, VK_DEVICE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, VK_DEVICE_CREATE_INFO_ENABLE_FEATURES: Vec<PhysicalDeviceFeatures>) -> (ash::Device,(u32, u32)){
+fn GetVkDevice(VkInstance: &Instance, VkPhysicalDevice: PhysicalDevice,VkSurface: &SurfaceKHR, SurfaceFN: &Surface, VK_DEVICE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, VK_DEVICE_CREATE_INFO_ENABLE_FEATURES: Vec<PhysicalDeviceFeatures>) -> (ash::Device,(u32, u32)){
     let PhysicalDevicesQueueFamilyPropertiesVec = unsafe { VkInstance.get_physical_device_queue_family_properties(VkPhysicalDevice) };
     let mut QueueFamilyPropIndexGraphics = 0;
     let mut QueueFamilyPropIndexPresent = 0;

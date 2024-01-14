@@ -4,6 +4,7 @@ pub fn GetCommandPool(VkDevice: &ash::Device, QueueFamilyIndices: &(u32, u32)) -
     let VK_COMMAND_POOL_CREATE_INFO = vk::CommandPoolCreateInfo{
         s_type: vk::StructureType::COMMAND_POOL_CREATE_INFO,
         queue_family_index: QueueFamilyIndices.0,
+        flags: vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER,
         ..Default::default()
     };
 

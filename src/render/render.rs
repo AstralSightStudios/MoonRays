@@ -1,4 +1,4 @@
-use winit::{event::{WindowEvent, Event, VirtualKeyCode}, event_loop::{ControlFlow, EventLoop}, window::Window, platform::run_return::EventLoopExtRunReturn};
+use winit::{event::{WindowEvent, Event, VirtualKeyCode},platform::run_return::EventLoopExtRunReturn, event_loop::ControlFlow};
 use ash::{self, vk};
 
 #[path="./vk/vkmain.rs"]
@@ -24,7 +24,7 @@ impl RenderTools{
 
     pub fn DoDraw(self){
         if(self.RenderEngine == RenderEngines::Vulkan){
-            let mut VkLoadTuple: ((Window, EventLoop<()>), (ash::Entry, ash::Instance), vk::PhysicalDevice, (ash::Device, (u32, u32)), (vk::SurfaceKHR, ash::extensions::khr::Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, ash::extensions::khr::Swapchain), Vec<ash::vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore)) = VKRenderMain::LoadVK();
+            let mut VkRenderEngine = VKRenderMain::RenderEngineVK::LoadVK();
             //创建用于进行帧等待的Fence
             let FenceCreate = vk::FenceCreateInfo{
                 s_type: vk::StructureType::FENCE_CREATE_INFO,
@@ -32,12 +32,12 @@ impl RenderTools{
                 ..Default::default()
             };
             let VkFence = vec![
-                unsafe { VkLoadTuple.3.0.create_fence(&FenceCreate, None).unwrap() }
+                unsafe { VkRenderEngine.VkDevice.create_fence(&FenceCreate, None).unwrap() }
             ];
-            let GraphicsQueue = unsafe { VkLoadTuple.3.0.get_device_queue(VkLoadTuple.3.1.0, 0) };
-            let PresentQueue = unsafe{ VkLoadTuple.3.0.get_device_queue(VkLoadTuple.3.1.1, 0) };
+            let GraphicsQueue = unsafe { VkRenderEngine.VkDevice.get_device_queue(VkRenderEngine.VkQueueFamilyIndicesGraphicsAndPresent.GraphicsQueueIndex, 0) };
+            let PresentQueue = unsafe{ VkRenderEngine.VkDevice.get_device_queue(VkRenderEngine.VkQueueFamilyIndicesGraphicsAndPresent.PresentQueueIndex, 0) };
             log::info!("Got Graphics and Present Queue");
-            VkLoadTuple.0.1.run_return(move |event, _, control_flow| match event {
+            VkRenderEngine.WinitWindow.1.run_return(move |event, _, control_flow| match event {
                 winit::event::Event::WindowEvent {
                     event:
                         WindowEvent::CloseRequested
@@ -55,7 +55,7 @@ impl RenderTools{
                     *control_flow = ControlFlow::Exit;
                 } 
                 Event::MainEventsCleared => {
-                    VkLoadTuple.0.0.request_redraw();
+                    VkRenderEngine.WinitWindow.0.request_redraw();
                 }
                 Event::RedrawRequested(_) => {
                         // Vulkan帧绘制
@@ -63,22 +63,22 @@ impl RenderTools{
 
                         // 等待上一帧完成
                         //log::info!("wait");
-                        unsafe { VkLoadTuple.3.0.wait_for_fences(&VkFence, true, 18446744073709551615).unwrap() };
+                        unsafe { VkRenderEngine.VkDevice.wait_for_fences(&VkFence, true, 18446744073709551615).unwrap() };
                         //log::info!("wait finish");
-                        unsafe { VkLoadTuple.3.0.reset_fences(&VkFence).unwrap() };
+                        unsafe { VkRenderEngine.VkDevice.reset_fences(&VkFence).unwrap() };
                         //log::info!("reset finish");
 
                         //log::info!("loop");
-                        let ImageIndex = unsafe { VkLoadTuple.6.1.acquire_next_image(VkLoadTuple.6.0, 2100000000, VkLoadTuple.14.0, vk::Fence::null()).unwrap() };
+                        let ImageIndex = unsafe { VkRenderEngine.VkSwapChain.1.acquire_next_image(VkRenderEngine.VkSwapChain.0, 2100000000, VkRenderEngine.VkSemaphoreImageAvailable, vk::Fence::null()).unwrap() };
 
-                        unsafe { VkLoadTuple.3.0.reset_command_buffer(VkLoadTuple.13[ImageIndex.0 as usize], vk::CommandBufferResetFlags::empty()).unwrap() };
-                        VKRenderMain::VkDrawer::DoDrawTask(&VkLoadTuple.3.0, &VkLoadTuple.10.0, &VkLoadTuple.10.2, &VkLoadTuple.10.3, &VkLoadTuple.10.1, &VkLoadTuple.13, &VkLoadTuple.11, &VkLoadTuple.5, ImageIndex.0 as usize);
+                        unsafe { VkRenderEngine.VkDevice.reset_command_buffer(VkRenderEngine.VkCommandBuffers[ImageIndex.0 as usize], vk::CommandBufferResetFlags::empty()).unwrap() };
+                        VKRenderMain::VkDrawer::DoDrawTask(&VkRenderEngine.VkDevice, &VkRenderEngine.VkPipeline, &VkRenderEngine.VkViewport, &VkRenderEngine.VkRect2DRenderArea, &VkRenderEngine.VkRenderPass, &VkRenderEngine.VkCommandBuffers, &VkRenderEngine.VkFrameBuffers, &VkRenderEngine.VkSwapChainSettings, ImageIndex.0 as usize);
 
                         //log::info!("ImageIndex: u32={} bool={}", ImageIndex.0, ImageIndex.1);
 
                         // 提交指令缓冲
-                        let WaitSemaphores = vec![VkLoadTuple.14.0];
-                        let SignalSemaphores = vec![VkLoadTuple.14.1];
+                        let WaitSemaphores = vec![VkRenderEngine.VkSemaphoreImageAvailable];
+                        let SignalSemaphores = vec![VkRenderEngine.VkSemaphoreRenderFinished];
                         let WaitStages = vec![vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
                         let SubmitInfo = vec![
                             vk::SubmitInfo{
@@ -87,17 +87,17 @@ impl RenderTools{
                                 p_wait_semaphores: WaitSemaphores.as_ptr(),
                                 p_wait_dst_stage_mask: WaitStages.as_ptr(),
                                 command_buffer_count: 1,
-                                p_command_buffers: VkLoadTuple.13.as_ptr(),
+                                p_command_buffers: VkRenderEngine.VkCommandBuffers.as_ptr(),
                                 signal_semaphore_count: SignalSemaphores.len() as u32,
                                 p_signal_semaphores: SignalSemaphores.as_ptr(),
                                 ..Default::default()
                             }
                         ];
                 
-                        unsafe { VkLoadTuple.3.0.queue_submit(GraphicsQueue, &SubmitInfo, VkFence[0]).unwrap() };
+                        unsafe { VkRenderEngine.VkDevice.queue_submit(GraphicsQueue, &SubmitInfo, VkFence[0]).unwrap() };
 
                         let SwapChains = vec![
-                            VkLoadTuple.6.0
+                            VkRenderEngine.VkSwapChain.0
                         ];
 
                         let DrawPresentInfo = vk::PresentInfoKHR{
@@ -114,7 +114,7 @@ impl RenderTools{
 
                         //log::info!("SwapChain={:?}", &DrawPresentInfo.p_swapchains.wrapping_add(0));
                 
-                        unsafe { VkLoadTuple.6.1.queue_present(PresentQueue, &DrawPresentInfo).unwrap() };
+                        unsafe { VkRenderEngine.VkSwapChain.1.queue_present(PresentQueue, &DrawPresentInfo).unwrap() };
                 }
                 Event::LoopDestroyed => {
                     //unsafe { &LoadedTuples.4.1.destroy_surface(LoadedTuples.4.0, None) };
