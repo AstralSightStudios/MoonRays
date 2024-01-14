@@ -1,6 +1,6 @@
 use ash::vk;
 
-pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>, VkViewPort: &Vec<vk::Viewport>, VkViewRect2D: &Vec<vk::Rect2D>, VkRenderPass: &vk::RenderPass, VkCommandBuffers: &Vec<vk::CommandBuffer>, VkFrameBuffers: &Vec<vk::Framebuffer>, SwapChainSettings: &(vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR)){
+pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>, VkViewPort: &Vec<vk::Viewport>, VkViewRect2D: &Vec<vk::Rect2D>, VkRenderPass: &vk::RenderPass, VkCommandBuffers: &Vec<vk::CommandBuffer>, VkFrameBuffers: &Vec<vk::Framebuffer>, SwapChainSettings: &(vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), ImageIndex: usize){
     let mut LoopIndex = 0; //由于VkCommandBuffers与VkFrameBuffers长度相等，因此通用一个循环
     for VkCommandBuffer in VkCommandBuffers{
         let BeginInfo = vk::CommandBufferBeginInfo{
@@ -14,7 +14,7 @@ pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>
         let RPBeginInfo = vk::RenderPassBeginInfo{
             s_type: vk::StructureType::RENDER_PASS_BEGIN_INFO,
             render_pass: *VkRenderPass,
-            framebuffer: VkFrameBuffers[LoopIndex],
+            framebuffer: VkFrameBuffers[ImageIndex],
             render_area: vk::Rect2D { offset: vk::Offset2D { x: 0, y: 0 }, extent: SwapChainSettings.1 },
             clear_value_count: 1,
             p_clear_values: vec![crate::RENDER_VK_CLEAR_COLOR].as_ptr(),
@@ -33,7 +33,7 @@ pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>
             VkDevice.cmd_end_render_pass(*VkCommandBuffer);
             VkDevice.end_command_buffer(*VkCommandBuffer).unwrap();
 
-            log::info!("Draw Command Sended");
+            //log::info!("Draw Command Sended");
         }
     }
 }

@@ -30,7 +30,7 @@ mod VkFrameBuffer;
 #[path="./vkcommand.rs"]
 mod VkCommand;
 #[path="./vkdrawer.rs"]
-mod VkDrawer;
+pub(crate) mod VkDrawer;
 #[path="./vksemaphores.rs"]
 mod VkSemaphores;
 #[path="../spirv_compiler.rs"]
@@ -80,7 +80,7 @@ pub fn LoadVK() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, 
     let VkCommandBuffers = VkCommand::GetCommandBuffers(&VkDevice.0, &VkSwapChainFrameBuffers, &VkCommandPool);
     let VkSemaphore = VkSemaphores::GetVkSemaphore(&VkDevice.0);
 
-    VkDrawer::DoDrawTask(&VkDevice.0, &VkGraphicsPipeline.0, &VkGraphicsPipeline.2, &VkGraphicsPipeline.3, &VkGraphicsPipeline.1, &VkCommandBuffers, &VkSwapChainFrameBuffers, &VkSwapChainSettings);
+    VkDrawer::DoDrawTask(&VkDevice.0, &VkGraphicsPipeline.0, &VkGraphicsPipeline.2, &VkGraphicsPipeline.3, &VkGraphicsPipeline.1, &VkCommandBuffers, &VkSwapChainFrameBuffers, &VkSwapChainSettings, 0);
 
     return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface.clone(), VkSwapChainSettings, VkSwapChain, VkSwapChainImages, VkSwapChainImageViews, VkBaseShaderStages, VkGraphicsPipeline, VkSwapChainFrameBuffers, VkCommandPool, VkCommandBuffers, VkSemaphore);
 }
