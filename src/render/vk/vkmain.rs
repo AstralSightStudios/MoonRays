@@ -4,7 +4,7 @@
 */
 
 use std::{ptr::null, ffi::{CString, CStr}, process::exit};
-use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, DeviceQueueCreateInfo, PhysicalDeviceFeatures}, Entry, Instance, extensions::{khr::Surface, self}};
+use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, DeviceQueueCreateInfo, PhysicalDeviceFeatures, CommandPool, CommandBuffer, Semaphore}, Entry, Instance, extensions::{khr::Surface, self}};
 use raw_window_handle::HasRawDisplayHandle;
 use winit::{event_loop::EventLoop, window::Window};
 
@@ -36,13 +36,14 @@ mod VkSemaphores;
 #[path="../spirv_compiler.rs"]
 mod SpirvCompiler;
 
+#[derive(PartialEq, Clone, Copy)]
 pub struct QueueFamilyIndices{
     pub GraphicsQueueIndex: u32,
     pub PresentQueueIndex: u32
 }
 
+#[derive(Clone)]
 pub struct RenderEngineVK{
-    pub WinitWindow: (Window, EventLoop<()>),
     pub VkBase: (Entry, Instance),
     pub VkPhysicalDevice: PhysicalDevice,
     pub VkDevice: ash::Device,
@@ -65,10 +66,11 @@ pub struct RenderEngineVK{
 }
 
 impl RenderEngineVK{
-    pub fn LoadVK() -> RenderEngineVK{
+    // 我们拒绝屎山，小子
+    // 这个函数用于将LoadVKTuple得到的依托答辩存放进一个美观的别墅中
+    pub fn LoadVK() -> (RenderEngineVK, (Window, EventLoop<()>)){
         let LoadResult = LoadVKTuple();
-        return RenderEngineVK{
-            WinitWindow: LoadResult.0,
+        return (RenderEngineVK{
             VkBase: LoadResult.1,
             VkPhysicalDevice: LoadResult.2,
             VkDevice: LoadResult.3.0,
@@ -77,21 +79,48 @@ impl RenderEngineVK{
                 PresentQueueIndex: LoadResult.3.1.1,
             },
             VkSurface: LoadResult.4,
-            VkSwapChainSettings: LoadResult.5,
-            VkSwapChain: LoadResult.6,
-            VkImages: LoadResult.7,
-            VkImageViews: LoadResult.8,
-            VkPipelineShaderStages: LoadResult.9,
-            VkPipeline: LoadResult.10.0,
-            VkRenderPass: LoadResult.10.1,
-            VkViewport: LoadResult.10.2,
-            VkRect2DRenderArea: LoadResult.10.3,
-            VkFrameBuffers: LoadResult.11,
+            VkSwapChainSettings: LoadResult.5, // 需要在swapchain重建中重新创建
+            VkSwapChain: LoadResult.6, // 需要在swapchain重建中重新创建
+            VkImages: LoadResult.7, // 需要在swapchain重建中重新创建
+            VkImageViews: LoadResult.8, // 需要在swapchain重建中重新创建
+            VkPipelineShaderStages: LoadResult.9, // 需要在swapchain重建中重新创建
+            VkPipeline: LoadResult.10.0, // 需要在swapchain重建中重新创建
+            VkRenderPass: LoadResult.10.1, // 需要在swapchain重建中重新创建
+            VkViewport: LoadResult.10.2, // 需要在swapchain重建中重新创建
+            VkRect2DRenderArea: LoadResult.10.3, // 需要在swapchain重建中重新创建
+            VkFrameBuffers: LoadResult.11, // 需要在swapchain重建中重新创建
             VkCommandPool: LoadResult.12,
             VkCommandBuffers: LoadResult.13,
             VkSemaphoreImageAvailable: LoadResult.14.0,
             VkSemaphoreRenderFinished: LoadResult.14.1
+        }, LoadResult.0)
+    }
+
+    // 窗口大小更改了，重开吧牢底😭
+    // 这个函数用来重创建Surface以及后续的所有东西
+    pub fn RemakeSurface(&mut self, WinitWindow: &(Window, EventLoop<()>)){
+        unsafe { 
+            self.VkDevice.device_wait_idle().unwrap();
+            for FrameBuffer in &self.VkFrameBuffers{
+                self.VkDevice.destroy_framebuffer(*FrameBuffer, None);
+            }
+            for VkImageView in &self.VkImageViews{
+                self.VkDevice.destroy_image_view(*VkImageView, None);
+            }
+            self.VkSwapChain.1.destroy_swapchain(self.VkSwapChain.0, None);
         }
+
+        self.VkSwapChainSettings = VkSwapChain::GetSwapChainSettings(&self.VkPhysicalDevice, &self.VkSurface.0, &self.VkSurface.1, &WinitWindow.0);
+        self.VkSwapChain = VkSwapChain::GetSwapChain(&self.VkBase.1, &self.VkDevice, &self.VkSurface.0, &self.VkSwapChainSettings, &(self.VkQueueFamilyIndicesGraphicsAndPresent.GraphicsQueueIndex, self.VkQueueFamilyIndicesGraphicsAndPresent.PresentQueueIndex));
+        self.VkImages = VkSwapChain::GetSwapChainImages(&self.VkSwapChain.0, &self.VkSwapChain.1);
+        self.VkImageViews = VkSwapChain::GetSwapChainImageViews(&self.VkDevice, &self.VkImages, &self.VkSwapChainSettings);
+        //self.VkPipelineShaderStages = GetBaseShadersPipelineShaderStage(&self.VkDevice);
+        //let Temp_PipelineCreateRet = GetGraphicsPipeline(&self.VkDevice, &self.VkPipelineShaderStages, &self.VkSwapChainSettings);
+        //self.VkPipeline = Temp_PipelineCreateRet.0;
+        //self.VkRenderPass = Temp_PipelineCreateRet.1;
+        //self.VkViewport = Temp_PipelineCreateRet.2;
+        //self.VkRect2DRenderArea = Temp_PipelineCreateRet.3;
+        self.VkFrameBuffers = VkFrameBuffer::GetSwapChainFrameBuffers(&self.VkDevice, &self.VkImageViews, &self.VkRenderPass, &self.VkSwapChainSettings);
     }
 }
 
