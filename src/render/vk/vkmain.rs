@@ -4,7 +4,7 @@
 */
 
 use std::{ptr::null, ffi::{CString, CStr}, process::exit};
-use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, DeviceQueueCreateInfo, PhysicalDeviceFeatures, CommandPool, CommandBuffer, Semaphore}, Entry, Instance, extensions::{khr::Surface, self}};
+use ash::{self, vk::{self, PhysicalDevice, QueueFlags, SurfaceKHR, DeviceQueueCreateInfo, PhysicalDeviceFeatures}, Entry, Instance, extensions::{khr::Surface, self}};
 use raw_window_handle::HasRawDisplayHandle;
 use winit::{event_loop::EventLoop, window::Window};
 
