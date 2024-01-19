@@ -8,6 +8,8 @@ rustup toolchain install nightly
 ```
 ## 写死的规范
 1. 着色器必须为`GLSL`格式且入口必须叫做`main`否则无法编译
+## 对于Apple平台
+目前这个任务还是交给社区吧
 ## 常见编译报错修复
 1. 报错`Unable to find libclang: "couldn't find any valid shared libraries matching: ['clang.dll', 'libclang.dll'], set the "LIBCLANG_PATH" environment variable to a path where one of these files can be found (invalid: [])"`
 

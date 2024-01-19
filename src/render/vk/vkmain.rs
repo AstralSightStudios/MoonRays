@@ -233,12 +233,6 @@ fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, VK_I
 
     let mut entry = unsafe { Entry::load().unwrap() };
 
-    // 苹果的所有操作系统不原生支持Vulkan，因此通过官方提供的MoltenVK创建特有Entry以实时将Vulkan转译为苹果官方的Metal
-    // 该操作及其所用的依赖（ash_molten）已被标记为只对MacOS和iOS启用与编译
-    #[cfg(any(target_os = "macos", target_os = "ios"))]{
-        entry = ash_molten::load();
-    }
-
     log::info!("Available layers:");
 
     for LayerProp in entry.enumerate_instance_layer_properties().unwrap(){
