@@ -3,6 +3,8 @@
     日志工具，这点想必不用多说
 */
 
+use std::fs;
+
 use log::LevelFilter;
 use log4rs::append::console::{ConsoleAppender, Target};
 use log4rs::append::file::FileAppender;
@@ -10,6 +12,13 @@ use log4rs::encode::pattern::PatternEncoder;
 use log4rs::config::{Appender, Config, Root};
 
 pub fn InitLogger() {
+    // 为了防止log文件太大塞满硬盘（尽管这可能需要很长时间）
+    // 在每次启动程序时都要删除上一次启动生成的log文件并重新生成
+
+    if (fs::try_exists("./latest_log.log").unwrap()){
+        fs::remove_file("./latest_log.log").unwrap();
+    }
+
     // 定义一个带颜色的info warn error + time输出的格式
     let encoder = PatternEncoder::new("{d(%Y-%m-%d %H:%M:%S)} {h({l})} {M}:{L} - {m}{n}");
 

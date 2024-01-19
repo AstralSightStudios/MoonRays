@@ -5,7 +5,8 @@ use ash::{self, vk::{self, SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, P
 pub fn GetGraphicsPipeline(VkDevice: &ash::Device, ShaderStages: &Vec<PipelineShaderStageCreateInfo>, SwapChainSettings: &(SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, PresentModeKHR)) -> (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<Rect2D>){
     let DYNAMIC_STATES = vec![
         vk::DynamicState::VIEWPORT,
-        vk::DynamicState::SCISSOR
+        vk::DynamicState::SCISSOR,
+        vk::DynamicState::PRIMITIVE_TOPOLOGY
     ];
 
     let VK_PIPELINE_DYNAMIC_STATE_CREATE_INFO = vk::PipelineDynamicStateCreateInfo{
@@ -15,13 +16,15 @@ pub fn GetGraphicsPipeline(VkDevice: &ash::Device, ShaderStages: &Vec<PipelineSh
         ..Default::default()
     };
 
-    // TODO: 脱离顶点数据硬编码，动态读取顶点数据
+    let BindingDescription = vec![super::GlslVertex::GlslVertexBase::GetBindingDescription()];
+    let AttributeDescription = super::GlslVertex::GlslVertexBase::GetAttributeDescriptions();
+
     let VK_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO = vk::PipelineVertexInputStateCreateInfo{
         s_type: vk::StructureType::PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        vertex_binding_description_count: 0,
-        p_vertex_binding_descriptions: null(),
-        vertex_attribute_description_count: 0,
-        p_vertex_attribute_descriptions: null(),
+        vertex_binding_description_count: BindingDescription.len() as u32,
+        p_vertex_binding_descriptions: BindingDescription.as_ptr(),
+        vertex_attribute_description_count: AttributeDescription.len() as u32,
+        p_vertex_attribute_descriptions: AttributeDescription.as_ptr(),
         ..Default::default()
     };
 
@@ -90,10 +93,10 @@ pub fn GetGraphicsPipeline(VkDevice: &ash::Device, ShaderStages: &Vec<PipelineSh
     let VK_PIPELINE_COLOR_BLEND_ATTACHMENT_STATE = vk::PipelineColorBlendAttachmentState{
         blend_enable: vk::TRUE,
         src_color_blend_factor: vk::BlendFactor::SRC_ALPHA,
-        dst_color_blend_factor: vk::BlendFactor::ONE_MINUS_CONSTANT_ALPHA,
+        dst_color_blend_factor: vk::BlendFactor::ONE_MINUS_SRC_ALPHA,
         color_blend_op: vk::BlendOp::ADD,
-        src_alpha_blend_factor: vk::BlendFactor::ONE,
-        dst_alpha_blend_factor: vk::BlendFactor::ZERO,
+        src_alpha_blend_factor: vk::BlendFactor::SRC_ALPHA,
+        dst_alpha_blend_factor: vk::BlendFactor::ONE_MINUS_SRC_ALPHA,
         alpha_blend_op: vk::BlendOp::ADD,
         color_write_mask: vk::ColorComponentFlags::RGBA,
     };

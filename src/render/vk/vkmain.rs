@@ -25,6 +25,8 @@ mod VkSwapChain;
 mod VkPipeline;
 #[path="./vkshader.rs"]
 mod VkShader;
+#[path="./vkbuffer.rs"]
+mod VkBuffer;
 #[path="./vkframebuffer.rs"]
 mod VkFrameBuffer;
 #[path="./vkcommand.rs"]
@@ -35,6 +37,10 @@ pub(crate) mod VkDrawer;
 mod VkSemaphores;
 #[path="../spirv_compiler.rs"]
 mod SpirvCompiler;
+# [path="../glslvertex.rs"]
+mod GlslVertex;
+
+static mut VK_VERTICES: Vec<Vec<GlslVertex::GlslVertexBase>> = vec![];
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct QueueFamilyIndices{
@@ -60,9 +66,10 @@ pub struct RenderEngineVK{
     pub VkRect2DRenderArea: Vec<vk::Rect2D>,
     pub VkFrameBuffers: Vec<vk::Framebuffer>,
     pub VkCommandPool: vk::CommandPool,
+    pub VkVertexBuffers: Vec<vk::Buffer>,
     pub VkCommandBuffers: Vec<vk::CommandBuffer>,
     pub VkSemaphoreImageAvailable: vk::Semaphore,
-    pub VkSemaphoreRenderFinished: vk::Semaphore
+    pub VkSemaphoreRenderFinished: vk::Semaphore,
 }
 
 impl RenderEngineVK{
@@ -90,6 +97,7 @@ impl RenderEngineVK{
             VkRect2DRenderArea: LoadResult.10.3, // 需要在swapchain重建中重新创建
             VkFrameBuffers: LoadResult.11, // 需要在swapchain重建中重新创建
             VkCommandPool: LoadResult.12,
+            VkVertexBuffers: LoadResult.15,
             VkCommandBuffers: LoadResult.13,
             VkSemaphoreImageAvailable: LoadResult.14.0,
             VkSemaphoreRenderFinished: LoadResult.14.1
@@ -115,17 +123,38 @@ impl RenderEngineVK{
         self.VkImages = VkSwapChain::GetSwapChainImages(&self.VkSwapChain.0, &self.VkSwapChain.1);
         self.VkImageViews = VkSwapChain::GetSwapChainImageViews(&self.VkDevice, &self.VkImages, &self.VkSwapChainSettings);
         //self.VkPipelineShaderStages = GetBaseShadersPipelineShaderStage(&self.VkDevice);
-        //let Temp_PipelineCreateRet = GetGraphicsPipeline(&self.VkDevice, &self.VkPipelineShaderStages, &self.VkSwapChainSettings);
-        //self.VkPipeline = Temp_PipelineCreateRet.0;
-        //self.VkRenderPass = Temp_PipelineCreateRet.1;
-        //self.VkViewport = Temp_PipelineCreateRet.2;
-        //self.VkRect2DRenderArea = Temp_PipelineCreateRet.3;
+        let Temp_PipelineCreateRet = GetGraphicsPipeline(&self.VkDevice, &self.VkPipelineShaderStages, &self.VkSwapChainSettings);
+        self.VkPipeline = Temp_PipelineCreateRet.0;
+        self.VkRenderPass = Temp_PipelineCreateRet.1;
+        self.VkViewport = Temp_PipelineCreateRet.2;
+        self.VkRect2DRenderArea = Temp_PipelineCreateRet.3;
         self.VkFrameBuffers = VkFrameBuffer::GetSwapChainFrameBuffers(&self.VkDevice, &self.VkImageViews, &self.VkRenderPass, &self.VkSwapChainSettings);
     }
 }
 
-fn LoadVKTuple() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, (ash::Device, (u32, u32)), (SurfaceKHR, Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, extensions::khr::Swapchain), Vec<vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore)){
+fn LoadVKTuple() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, (ash::Device, (u32, u32)), (SurfaceKHR, Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, extensions::khr::Swapchain), Vec<vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore), Vec<vk::Buffer>){
     SpirvCompiler::CompileBaseShaders();
+
+    unsafe { VK_VERTICES.push(
+        vec![
+            GlslVertex::GlslVertexBase{
+                pos: glm::vec2(-0.5, -0.5), 
+                color: glm::vec3(1.0, 0.0, 0.0)
+            },
+            GlslVertex::GlslVertexBase{
+                pos: glm::vec2(0.5, -0.5), 
+                color: glm::vec3(0.0, 1.0, 0.0)
+            },
+            GlslVertex::GlslVertexBase{
+                pos: glm::vec2(-0.5, 0.5), 
+                color: glm::vec3(0.0, 0.0, 1.0)
+            },
+            GlslVertex::GlslVertexBase{
+                pos: glm::vec2(0.5, 0.5), 
+                color: glm::vec3(1.0, 1.0, 1.0)
+            }
+        ]
+    ) };
 
     let VkWindow = VkWindowTools::CreateWinitWindow();
     let mut InstanceExts = ash_window::enumerate_required_extensions(VkWindow.1.raw_display_handle()).unwrap().to_vec();
@@ -163,12 +192,16 @@ fn LoadVKTuple() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice,
     let VkGraphicsPipeline = GetGraphicsPipeline(&VkDevice.0, &VkBaseShaderStages, &VkSwapChainSettings);
     let VkSwapChainFrameBuffers = VkFrameBuffer::GetSwapChainFrameBuffers(&VkDevice.0, &VkSwapChainImageViews, &VkGraphicsPipeline.1, &VkSwapChainSettings);
     let VkCommandPool = VkCommand::GetCommandPool(&VkDevice.0, &VkDevice.1);
+    let mut VertexBuffers = vec![];
+    for Vertex in unsafe { &VK_VERTICES }{
+        VertexBuffers.push(VkBuffer::GetVertexBuffer(&VkReturn.1, &VkPhysicalDevice, &VkDevice.0, Vertex));
+    }
     let VkCommandBuffers = VkCommand::GetCommandBuffers(&VkDevice.0, &VkSwapChainFrameBuffers, &VkCommandPool);
     let VkSemaphore = VkSemaphores::GetVkSemaphore(&VkDevice.0);
 
-    VkDrawer::DoDrawTask(&VkDevice.0, &VkGraphicsPipeline.0, &VkGraphicsPipeline.2, &VkGraphicsPipeline.3, &VkGraphicsPipeline.1, &VkCommandBuffers, &VkSwapChainFrameBuffers, &VkSwapChainSettings, 0);
+    VkDrawer::DoDrawTask(&VkDevice.0, &VkGraphicsPipeline.0, &VkGraphicsPipeline.2, &VkGraphicsPipeline.3, &VkGraphicsPipeline.1, &VkCommandBuffers, &VkSwapChainFrameBuffers, &VkSwapChainSettings, 0, &VertexBuffers);
 
-    return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface.clone(), VkSwapChainSettings, VkSwapChain, VkSwapChainImages, VkSwapChainImageViews, VkBaseShaderStages, VkGraphicsPipeline, VkSwapChainFrameBuffers, VkCommandPool, VkCommandBuffers, VkSemaphore);
+    return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface.clone(), VkSwapChainSettings, VkSwapChain, VkSwapChainImages, VkSwapChainImageViews, VkBaseShaderStages, VkGraphicsPipeline, VkSwapChainFrameBuffers, VkCommandPool, VkCommandBuffers, VkSemaphore, VertexBuffers);
 }
 
 fn CreateInstance(VK_INSTANCE_CREATE_INFO_ENABLE_EXTENSION: Vec<*const i8>, VK_INSTANCE_CREATE_INFO_ENABLE_LAYERS: Vec<*const i8>) -> (Entry, Instance){

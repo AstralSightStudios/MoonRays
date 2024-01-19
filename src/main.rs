@@ -10,6 +10,7 @@
 #! [feature(stmt_expr_attributes)]
 #! [feature(strict_provenance)]
 #! [feature(ptr_metadata)]
+#! [feature(fs_try_exists)]
 
 # [path="./output/logger/logger.rs"]
 mod Logger;

@@ -121,6 +121,7 @@ impl RenderTools {
                         &VkRenderEngine.VkFrameBuffers,
                         &VkRenderEngine.VkSwapChainSettings,
                         ImageIndex.0 as usize,
+                        &VkRenderEngine.VkVertexBuffers
                     );
                     // log::info!("ImageIndex: u32={} bool={}", ImageIndex.0, ImageIndex.1);
                     // 提交指令缓冲
