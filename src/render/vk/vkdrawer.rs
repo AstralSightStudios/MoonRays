@@ -34,7 +34,7 @@ pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>
             VkDevice.cmd_set_scissor(*VkCommandBuffer, 0, &VkViewRect2D);
 
             VkDevice.cmd_set_primitive_topology(*VkCommandBuffer, vk::PrimitiveTopology::TRIANGLE_STRIP);
-            VkDevice.cmd_draw(*VkCommandBuffer, super::VK_VERTICES[0].len().try_into().unwrap(), 1, 0, 0) ;
+            VkDevice.cmd_draw(*VkCommandBuffer, super::VK_VERTICES[0].len().try_into().unwrap(), 4, 0, 0) ;
 
             VkDevice.cmd_end_render_pass(*VkCommandBuffer);
             VkDevice.end_command_buffer(*VkCommandBuffer).unwrap();

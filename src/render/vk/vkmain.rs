@@ -12,33 +12,37 @@ use self::{VkPipeline::GetGraphicsPipeline, VkShader::GetBaseShadersPipelineShad
 #[path="../../base/sysinfo.rs"]
 pub(crate) mod SysInfo;
 #[path="../../hardwaretools/canrunchecker.rs"]
-mod CanRunChecker;
+pub(crate) mod CanRunChecker;
 #[path="./vksurface.rs"]
-mod VkSurfaceTools;
+pub(crate) mod VkSurfaceTools;
 #[path="./vkwindow.rs"]
-mod VkWindowTools;
+pub(crate) mod VkWindowTools;
 #[path="./vkdebugger.rs"]
-mod VkDebugger;
+pub(crate) mod VkDebugger;
 #[path="./vkswapchain.rs"]
-mod VkSwapChain;
+pub(crate) mod VkSwapChain;
 #[path="./vkpipeline.rs"]
-mod VkPipeline;
+pub(crate) mod VkPipeline;
 #[path="./vkshader.rs"]
-mod VkShader;
+pub(crate) mod VkShader;
 #[path="./vkbuffer.rs"]
-mod VkBuffer;
+pub(crate) mod VkBuffer;
 #[path="./vkframebuffer.rs"]
-mod VkFrameBuffer;
+pub(crate) mod VkFrameBuffer;
 #[path="./vkcommand.rs"]
-mod VkCommand;
+pub(crate) mod VkCommand;
 #[path="./vkdrawer.rs"]
 pub(crate) mod VkDrawer;
 #[path="./vksemaphores.rs"]
-mod VkSemaphores;
+pub(crate) mod VkSemaphores;
+#[path="./vktexture.rs"]
+pub(crate) mod VkTexture;
+#[path="./vkdestoryer.rs"]
+pub(crate) mod VkDestoryer;
 #[path="../spirv_compiler.rs"]
-mod SpirvCompiler;
-# [path="../glslvertex.rs"]
-mod GlslVertex;
+pub(crate) mod SpirvCompiler;
+#[path="../glslvertex.rs"]
+pub(crate) mod GlslVertex;
 
 static mut VK_VERTICES: Vec<Vec<GlslVertex::GlslVertexBase>> = vec![];
 
@@ -70,6 +74,8 @@ pub struct RenderEngineVK{
     pub VkCommandBuffers: Vec<vk::CommandBuffer>,
     pub VkSemaphoreImageAvailable: vk::Semaphore,
     pub VkSemaphoreRenderFinished: vk::Semaphore,
+    pub VkQueue_GraphicsQueue: vk::Queue,
+    pub VkQueue_PresentQueue: vk::Queue
 }
 
 impl RenderEngineVK{
@@ -77,6 +83,18 @@ impl RenderEngineVK{
     // 这个函数用于将LoadVKTuple得到的依托答辩存放进一个美观的别墅中
     pub fn LoadVK() -> (RenderEngineVK, (Window, EventLoop<()>)){
         let LoadResult = LoadVKTuple();
+        let GraphicsQueue = unsafe {
+            LoadResult.3.0.get_device_queue (
+                LoadResult.3.1.0,
+                0,
+            )
+        };
+        let PresentQueue = unsafe {
+            LoadResult.3.0.get_device_queue (
+                LoadResult.3.1.1,
+                0,
+            )
+        };
         return (RenderEngineVK{
             VkBase: LoadResult.1,
             VkPhysicalDevice: LoadResult.2,
@@ -100,7 +118,9 @@ impl RenderEngineVK{
             VkVertexBuffers: LoadResult.15,
             VkCommandBuffers: LoadResult.13,
             VkSemaphoreImageAvailable: LoadResult.14.0,
-            VkSemaphoreRenderFinished: LoadResult.14.1
+            VkSemaphoreRenderFinished: LoadResult.14.1,
+            VkQueue_GraphicsQueue: GraphicsQueue,
+            VkQueue_PresentQueue: PresentQueue
         }, LoadResult.0)
     }
 

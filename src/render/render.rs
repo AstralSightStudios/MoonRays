@@ -61,6 +61,7 @@ impl RenderTools {
                     0,
                 )
             };
+            VKRenderMain::VkTexture::GetTextureImage(&VkRenderEngine.VkBase.1, &VkRenderEngine.VkPhysicalDevice, &VkRenderEngine.VkDevice, &GraphicsQueue, &VkRenderEngine.VkCommandPool, &"./test/testasset_textureimg.jpg".to_string());
             log::info! ("Got Graphics and Present Queue");
             WinitWindow.1.run_return (move |event, _, control_flow| match event {
                 winit::event::Event::WindowEvent {
