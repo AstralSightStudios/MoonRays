@@ -1,4 +1,4 @@
-use ash::{Instance, Device,vk::{self,Image, ImageView, ImageViewCreateInfo, ComponentMapping, ImageSubresourceRange, PhysicalDevice, SurfaceKHR, SurfaceFormatKHR, PresentModeKHR, SurfaceCapabilitiesKHR ,Extent2D, SwapchainKHR}, extensions::khr::Surface, extensions::khr::Swapchain};
+use ash::{Instance, Device,vk::{self,Image, ImageView, PhysicalDevice, SurfaceKHR, SurfaceFormatKHR, PresentModeKHR, SurfaceCapabilitiesKHR ,Extent2D, SwapchainKHR}, extensions::khr::Surface, extensions::khr::Swapchain};
 use winit::window::Window;
 use ash::extensions;
 
@@ -130,28 +130,7 @@ pub fn GetSwapChainImageViews(VkDevice: &Device, VkSwapChainImages: &Vec<Image>,
     let mut VkSwapChainImageViews: Vec<ImageView> = vec![];
 
     for VkImage in VkSwapChainImages{
-        let VK_IMAGE_VIEW_CREATE_INFO_DEFAULT = ImageViewCreateInfo{
-            s_type: vk::StructureType::IMAGE_VIEW_CREATE_INFO,
-            image: *VkImage,
-            view_type: vk::ImageViewType::TYPE_2D, // TODO: 动态可调的ImageView类型
-            format: SwapChainSettings.2.format,
-            components: ComponentMapping{
-                r: vk::ComponentSwizzle::IDENTITY,
-                g: vk::ComponentSwizzle::IDENTITY,
-                b: vk::ComponentSwizzle::IDENTITY,
-                a: vk::ComponentSwizzle::IDENTITY,
-            },
-            subresource_range: ImageSubresourceRange{ // TODO: 对于3D程序做调整
-                aspect_mask: vk::ImageAspectFlags::COLOR,
-                base_mip_level: 0,
-                level_count: 1,
-                base_array_layer: 0,
-                layer_count: 1,
-            },
-            ..Default::default()
-        };
-
-        VkSwapChainImageViews.push(unsafe { VkDevice.create_image_view(&VK_IMAGE_VIEW_CREATE_INFO_DEFAULT, None).unwrap() });
+        VkSwapChainImageViews.push(super::VkTexture::CreateImageView(VkDevice, VkImage, &SwapChainSettings.2.format));
     }
 
     return VkSwapChainImageViews;

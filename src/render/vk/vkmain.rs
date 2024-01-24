@@ -43,8 +43,8 @@ pub(crate) mod VkDestoryer;
 pub(crate) mod SpirvCompiler;
 #[path="../glslvertex.rs"]
 pub(crate) mod GlslVertex;
-
-static mut VK_VERTICES: Vec<Vec<GlslVertex::GlslVertexBase>> = vec![];
+#[path="./baseshapes.rs"]
+pub(crate) mod BaseShapes;
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct QueueFamilyIndices{
@@ -155,27 +155,6 @@ impl RenderEngineVK{
 fn LoadVKTuple() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice, (ash::Device, (u32, u32)), (SurfaceKHR, Surface), (vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), (vk::SwapchainKHR, extensions::khr::Swapchain), Vec<vk::Image>, Vec<vk::ImageView>, Vec<vk::PipelineShaderStageCreateInfo>, (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<vk::Rect2D>), Vec<vk::Framebuffer>, vk::CommandPool, Vec<vk::CommandBuffer>, (vk::Semaphore, vk::Semaphore), Vec<vk::Buffer>){
     SpirvCompiler::CompileBaseShaders();
 
-    unsafe { VK_VERTICES.push(
-        vec![
-            GlslVertex::GlslVertexBase{
-                pos: glm::vec2(-0.5, -0.5), 
-                color: glm::vec3(1.0, 0.0, 0.0)
-            },
-            GlslVertex::GlslVertexBase{
-                pos: glm::vec2(0.5, -0.5), 
-                color: glm::vec3(0.0, 1.0, 0.0)
-            },
-            GlslVertex::GlslVertexBase{
-                pos: glm::vec2(-0.5, 0.5), 
-                color: glm::vec3(0.0, 0.0, 1.0)
-            },
-            GlslVertex::GlslVertexBase{
-                pos: glm::vec2(0.5, 0.5), 
-                color: glm::vec3(1.0, 1.0, 1.0)
-            }
-        ]
-    ) };
-
     let VkWindow = VkWindowTools::CreateWinitWindow();
     let mut InstanceExts = ash_window::enumerate_required_extensions(VkWindow.1.raw_display_handle()).unwrap().to_vec();
     InstanceExts.push(
@@ -213,13 +192,14 @@ fn LoadVKTuple() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice,
     let VkSwapChainFrameBuffers = VkFrameBuffer::GetSwapChainFrameBuffers(&VkDevice.0, &VkSwapChainImageViews, &VkGraphicsPipeline.1, &VkSwapChainSettings);
     let VkCommandPool = VkCommand::GetCommandPool(&VkDevice.0, &VkDevice.1);
     let mut VertexBuffers = vec![];
-    for Vertex in unsafe { &VK_VERTICES }{
-        VertexBuffers.push(VkBuffer::GetVertexBuffer(&VkReturn.1, &VkPhysicalDevice, &VkDevice.0, Vertex));
-    }
+    VertexBuffers.push(VkBuffer::GetVertexBuffer(&VkReturn.1, &VkPhysicalDevice, &VkDevice.0, &BaseShapes::BaseVertices::RECTANGLE()));
+    let IndexBuffer = VkBuffer::CreateIndexBuffer(&VkReturn.1, &VkPhysicalDevice, &VkDevice.0, &VkCommandPool, unsafe { &VkDevice.0.get_device_queue (
+        VkDevice.1.0,
+        0) }, BaseShapes::BaseIndices::RECTANGLE());
     let VkCommandBuffers = VkCommand::GetCommandBuffers(&VkDevice.0, &VkSwapChainFrameBuffers, &VkCommandPool);
     let VkSemaphore = VkSemaphores::GetVkSemaphore(&VkDevice.0);
 
-    VkDrawer::DoDrawTask(&VkDevice.0, &VkGraphicsPipeline.0, &VkGraphicsPipeline.2, &VkGraphicsPipeline.3, &VkGraphicsPipeline.1, &VkCommandBuffers, &VkSwapChainFrameBuffers, &VkSwapChainSettings, 0, &VertexBuffers);
+    VkDrawer::DoDrawTask(&VkDevice.0, &VkGraphicsPipeline.0, &VkGraphicsPipeline.2, &VkGraphicsPipeline.3, &VkGraphicsPipeline.1, &VkCommandBuffers, &VkSwapChainFrameBuffers, &VkSwapChainSettings, 0, &VertexBuffers, &IndexBuffer, BaseShapes::BaseIndices::RECTANGLE().len());
 
     return (VkWindow, VkReturn, VkPhysicalDevice, VkDevice, VkSurface.clone(), VkSwapChainSettings, VkSwapChain, VkSwapChainImages, VkSwapChainImageViews, VkBaseShaderStages, VkGraphicsPipeline, VkSwapChainFrameBuffers, VkCommandPool, VkCommandBuffers, VkSemaphore, VertexBuffers);
 }

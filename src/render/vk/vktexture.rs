@@ -75,3 +75,32 @@ pub fn GetTextureImage(VkInstance: &ash::Instance, VkPhysicalDevice: &vk::Physic
 
     super::VkDestoryer::DestoryAndFreeBuffer(VkDevice, TargetImageBuffer, TargetImageBufferMemory);
 }
+
+pub fn CreateImageView(VkDevice: &ash::Device, VkImage: &vk::Image, VkImageFormat: &vk::Format) -> vk::ImageView{
+    let VK_IMAGE_VIEW_CREATE_INFO_DEFAULT = vk::ImageViewCreateInfo{
+        s_type: vk::StructureType::IMAGE_VIEW_CREATE_INFO,
+        image: *VkImage,
+        view_type: vk::ImageViewType::TYPE_2D, // TODO: 动态可调的ImageView类型
+        format: *VkImageFormat,
+        components: vk::ComponentMapping{
+            r: vk::ComponentSwizzle::IDENTITY,
+            g: vk::ComponentSwizzle::IDENTITY,
+            b: vk::ComponentSwizzle::IDENTITY,
+            a: vk::ComponentSwizzle::IDENTITY,
+        },
+        subresource_range: vk::ImageSubresourceRange{ // TODO: 对于3D程序做调整
+            aspect_mask: vk::ImageAspectFlags::COLOR,
+            base_mip_level: 0,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: 1,
+        },
+        ..Default::default()
+    };
+
+    return unsafe { VkDevice.create_image_view(&VK_IMAGE_VIEW_CREATE_INFO_DEFAULT, None).unwrap() };
+}
+
+pub fn CreateTextureImageView(VkDevice: &ash::Device, VkImage: &vk::Image) -> vk::ImageView{
+    return CreateImageView(VkDevice, VkImage, &vk::Format::R8G8B8A8_SRGB);
+}

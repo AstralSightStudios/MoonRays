@@ -1,6 +1,6 @@
 use ash::vk;
 
-pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>, VkViewPort: &Vec<vk::Viewport>, VkViewRect2D: &Vec<vk::Rect2D>, VkRenderPass: &vk::RenderPass, VkCommandBuffers: &Vec<vk::CommandBuffer>, VkFrameBuffers: &Vec<vk::Framebuffer>, SwapChainSettings: &(vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), ImageIndex: usize, VertexBuffers: &Vec<vk::Buffer>){
+pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>, VkViewPort: &Vec<vk::Viewport>, VkViewRect2D: &Vec<vk::Rect2D>, VkRenderPass: &vk::RenderPass, VkCommandBuffers: &Vec<vk::CommandBuffer>, VkFrameBuffers: &Vec<vk::Framebuffer>, SwapChainSettings: &(vk::SurfaceCapabilitiesKHR, vk::Extent2D, vk::SurfaceFormatKHR, vk::PresentModeKHR), ImageIndex: usize, VertexBuffers: &Vec<vk::Buffer>, IndexBuffer: &vk::Buffer, IndexNumber: usize){
     let mut LoopIndex = 0; //由于VkCommandBuffers与VkFrameBuffers长度相等，因此通用一个循环
     for VkCommandBuffer in VkCommandBuffers{
         let BeginInfo = vk::CommandBufferBeginInfo{
@@ -29,12 +29,13 @@ pub fn DoDrawTask(VkDevice: &ash::Device, VkGraphicsPipeline: &Vec<vk::Pipeline>
             VkDevice.cmd_begin_render_pass(*VkCommandBuffer, &RPBeginInfo, vk::SubpassContents::INLINE);
             VkDevice.cmd_bind_pipeline(*VkCommandBuffer, vk::PipelineBindPoint::GRAPHICS, VkGraphicsPipeline[LoopIndex]);
             VkDevice.cmd_bind_vertex_buffers(*VkCommandBuffer, 0, &VertexBuffers, &DeviceSizeOffsets);
+            VkDevice.cmd_bind_index_buffer(*VkCommandBuffer, *IndexBuffer, 0, vk::IndexType::UINT32);
 
             VkDevice.cmd_set_viewport(*VkCommandBuffer, 0, &VkViewPort);
             VkDevice.cmd_set_scissor(*VkCommandBuffer, 0, &VkViewRect2D);
 
-            VkDevice.cmd_set_primitive_topology(*VkCommandBuffer, vk::PrimitiveTopology::TRIANGLE_STRIP);
-            VkDevice.cmd_draw(*VkCommandBuffer, super::VK_VERTICES[0].len().try_into().unwrap(), 4, 0, 0) ;
+            //VkDevice.cmd_set_primitive_topology(*VkCommandBuffer, vk::PrimitiveTopology::TRIANGLE_STRIP);
+            VkDevice.cmd_draw_indexed(*VkCommandBuffer, IndexNumber.try_into().unwrap(), 1, 0, 0, 0);
 
             VkDevice.cmd_end_render_pass(*VkCommandBuffer);
             VkDevice.end_command_buffer(*VkCommandBuffer).unwrap();

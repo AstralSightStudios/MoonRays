@@ -14,13 +14,6 @@ pub enum RenderEngines{
     Null
 }
 
-// 由于Rust严格的内存管理机制，即便使用一堆unsafe仍然无法绕过
-// 我们只能专门创建一个结构体，用来存储一些可以实现copy trait的东西
-#[derive(PartialEq, Clone, Copy)]
-pub struct CanCopyVkThings{
-
-}
-
 pub struct RenderTools{
     RenderEngine: RenderEngines
 }
@@ -61,6 +54,7 @@ impl RenderTools {
                     0,
                 )
             };
+            let IndexBuffer_Rectangle = VKRenderMain::VkBuffer::CreateIndexBuffer(&VkRenderEngine.VkBase.1, &VkRenderEngine.VkPhysicalDevice, &VkRenderEngine.VkDevice, &VkRenderEngine.VkCommandPool, &VkRenderEngine.VkQueue_GraphicsQueue, VKRenderMain::BaseShapes::BaseIndices::RECTANGLE());
             VKRenderMain::VkTexture::GetTextureImage(&VkRenderEngine.VkBase.1, &VkRenderEngine.VkPhysicalDevice, &VkRenderEngine.VkDevice, &GraphicsQueue, &VkRenderEngine.VkCommandPool, &"./test/testasset_textureimg.jpg".to_string());
             log::info! ("Got Graphics and Present Queue");
             WinitWindow.1.run_return (move |event, _, control_flow| match event {
@@ -122,7 +116,9 @@ impl RenderTools {
                         &VkRenderEngine.VkFrameBuffers,
                         &VkRenderEngine.VkSwapChainSettings,
                         ImageIndex.0 as usize,
-                        &VkRenderEngine.VkVertexBuffers
+                        &VkRenderEngine.VkVertexBuffers,
+                        &IndexBuffer_Rectangle,
+                        VKRenderMain::BaseShapes::BaseIndices::RECTANGLE().len()
                     );
                     // log::info!("ImageIndex: u32={} bool={}", ImageIndex.0, ImageIndex.1);
                     // 提交指令缓冲

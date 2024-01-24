@@ -42,7 +42,7 @@ pub fn SINGLE_BeginCommands(VkDevice: &ash::Device, VkCommandPool: &vk::CommandP
         flags: vk::CommandBufferUsageFlags::SIMULTANEOUS_USE,
         ..Default::default()
     }).unwrap() };
-    log::info!("[SINGLE CommandBuffer] Begin");
+    //log::info!("[SINGLE CommandBuffer] Begin");
     return VkCommandBuffers[0];
 }
 
@@ -62,5 +62,5 @@ pub fn SINGLE_EndCommandsAndSubmit(VkDevice: &ash::Device, VkGraphicsQueue: &vk:
 
     unsafe { VkDevice.free_command_buffers(*VkCommandPool, &[*VkCommandBuffer]) };
 
-    log::info!("[SINGLE CommandBuffer] End");
+    //log::info!("[SINGLE CommandBuffer] End");
 }

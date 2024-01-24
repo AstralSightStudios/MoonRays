@@ -196,3 +196,30 @@ pub fn CopyBufferToImage(VkDevice: &ash::Device, VkCommandPool: &vk::CommandPool
 
     super::VkCommand::SINGLE_EndCommandsAndSubmit(VkDevice, VkGraphicsQueue, VkCommandPool, &VkCommandBuffer);
 }
+
+pub fn CreateIndexBuffer(VkInstance: &ash::Instance,VkPhysicalDevice: &ash::vk::PhysicalDevice, VkDevice: &ash::Device,VkCommandPool: &vk::CommandPool,VkGraphicsQueue: &vk::Queue, indices: Vec<u32>) -> vk::Buffer{
+    let VkBufferSize = std::mem::size_of::<u32>() * indices.len();
+    let VkBufferCreateRet = CreateGeneralBuffer(VkInstance, VkPhysicalDevice, VkDevice, VkBufferSize as u64, vk::BufferUsageFlags::TRANSFER_SRC, vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT);
+    let stagingBuffer = VkBufferCreateRet.0;
+    let stagingBufferMemory = VkBufferCreateRet.1;
+
+    let MemData = unsafe { VkDevice.map_memory(stagingBufferMemory, 0, VkBufferSize as u64, vk::MemoryMapFlags::empty()).unwrap() };
+    unsafe {
+        std::ptr::copy_nonoverlapping(
+            indices.as_ptr() as *const u8,
+            MemData as *mut u8,
+            VkBufferSize,
+        );
+    }
+    unsafe { VkDevice.unmap_memory(stagingBufferMemory) };
+
+    let VkIndexBufferCreateRet = CreateGeneralBuffer(VkInstance, VkPhysicalDevice, VkDevice, VkBufferSize as u64, vk::BufferUsageFlags::TRANSFER_DST | vk::BufferUsageFlags::INDEX_BUFFER, vk::MemoryPropertyFlags::DEVICE_LOCAL);
+    let VkIndexBuffer = VkIndexBufferCreateRet.0;
+    let VkIndexBufferMemory = VkIndexBufferCreateRet.1;
+
+    CopyBuffer(VkDevice, VkCommandPool, VkGraphicsQueue, stagingBuffer, VkIndexBuffer, VkBufferSize as u64);
+
+    super::VkDestoryer::DestoryAndFreeBuffer(VkDevice, stagingBuffer, stagingBufferMemory);
+
+    return VkIndexBuffer;
+}

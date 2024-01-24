@@ -6,7 +6,7 @@ pub fn GetGraphicsPipeline(VkDevice: &ash::Device, ShaderStages: &Vec<PipelineSh
     let DYNAMIC_STATES = vec![
         vk::DynamicState::VIEWPORT,
         vk::DynamicState::SCISSOR,
-        vk::DynamicState::PRIMITIVE_TOPOLOGY
+        //vk::DynamicState::PRIMITIVE_TOPOLOGY
     ];
 
     let VK_PIPELINE_DYNAMIC_STATE_CREATE_INFO = vk::PipelineDynamicStateCreateInfo{
