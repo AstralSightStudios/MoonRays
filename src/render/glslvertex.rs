@@ -1,4 +1,11 @@
 #[derive(Clone, Copy)]
+pub struct UniformBufferObject {
+    pub(crate) Model: glm::Mat4,
+    pub(crate) View: glm::Mat4,
+    pub(crate) Proj: glm::Mat4
+}
+
+#[derive(Clone, Copy)]
 pub struct GlslVertexBase{
     pub(crate) pos: glm::Vec2,
     pub(crate) color: glm::Vec3

@@ -49,3 +49,25 @@ pub fn GetBaseShadersPipelineShaderStage(VkDevice: &ash::Device) -> Vec<Pipeline
 
     return SpirVBaseShaderStages;
 }
+
+pub fn GetBaseVertShaderDescriptorSetLayout(VkDevice: &ash::Device) -> vk::DescriptorSetLayout{
+    let UboLayoutBindings = vec![
+        vk::DescriptorSetLayoutBinding{
+            binding: 0,
+            descriptor_type: vk::DescriptorType::UNIFORM_BUFFER,
+            descriptor_count: 1,
+            stage_flags: vk::ShaderStageFlags::VERTEX,
+            ..Default::default()
+        }
+    ];
+
+    let VK_DESCRIPTOR_SET_LAYOUT_CREATE_INFO = vk::DescriptorSetLayoutCreateInfo{
+        s_type: vk::StructureType::DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        binding_count: UboLayoutBindings.len() as u32,
+        p_bindings: UboLayoutBindings.as_ptr(),
+        ..Default::default()
+    };
+
+    let VkDescriptorSetLayout = unsafe { VkDevice.create_descriptor_set_layout(&VK_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, None).unwrap() };
+    return VkDescriptorSetLayout;
+}

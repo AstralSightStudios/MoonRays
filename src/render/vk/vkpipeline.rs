@@ -2,7 +2,7 @@ use std::ptr::null;
 
 use ash::{self, vk::{self, SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, PresentModeKHR, PipelineShaderStageCreateInfo, Rect2D}};
 
-pub fn GetGraphicsPipeline(VkDevice: &ash::Device, ShaderStages: &Vec<PipelineShaderStageCreateInfo>, SwapChainSettings: &(SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, PresentModeKHR)) -> (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<Rect2D>){
+pub fn GetGraphicsPipeline(VkDevice: &ash::Device, ShaderStages: &Vec<PipelineShaderStageCreateInfo>, SwapChainSettings: &(SurfaceCapabilitiesKHR, Extent2D, SurfaceFormatKHR, PresentModeKHR), VkPipelineLayoutSetLayouts: &Vec<vk::DescriptorSetLayout>) -> (Vec<vk::Pipeline>, vk::RenderPass, Vec<vk::Viewport>, Vec<Rect2D>){
     let DYNAMIC_STATES = vec![
         vk::DynamicState::VIEWPORT,
         vk::DynamicState::SCISSOR,
@@ -113,8 +113,8 @@ pub fn GetGraphicsPipeline(VkDevice: &ash::Device, ShaderStages: &Vec<PipelineSh
 
     let VK_PIPELINE_LAYOUT_CREATE_INFO = vk::PipelineLayoutCreateInfo{
         s_type: vk::StructureType::PIPELINE_LAYOUT_CREATE_INFO,
-        set_layout_count: 0,
-        p_set_layouts: null(),
+        set_layout_count: VkPipelineLayoutSetLayouts.len() as u32,
+        p_set_layouts: VkPipelineLayoutSetLayouts.as_ptr(),
         push_constant_range_count: 0,
         p_push_constant_ranges: null(),
         ..Default::default()

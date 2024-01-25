@@ -143,7 +143,10 @@ impl RenderEngineVK{
         self.VkImages = VkSwapChain::GetSwapChainImages(&self.VkSwapChain.0, &self.VkSwapChain.1);
         self.VkImageViews = VkSwapChain::GetSwapChainImageViews(&self.VkDevice, &self.VkImages, &self.VkSwapChainSettings);
         //self.VkPipelineShaderStages = GetBaseShadersPipelineShaderStage(&self.VkDevice);
-        let Temp_PipelineCreateRet = GetGraphicsPipeline(&self.VkDevice, &self.VkPipelineShaderStages, &self.VkSwapChainSettings);
+        let BaseVertShaderSetLayouts = vec![
+            VkShader::GetBaseVertShaderDescriptorSetLayout(&self.VkDevice)
+        ];
+        let Temp_PipelineCreateRet = GetGraphicsPipeline(&self.VkDevice, &self.VkPipelineShaderStages, &self.VkSwapChainSettings, &BaseVertShaderSetLayouts);
         self.VkPipeline = Temp_PipelineCreateRet.0;
         self.VkRenderPass = Temp_PipelineCreateRet.1;
         self.VkViewport = Temp_PipelineCreateRet.2;
@@ -188,7 +191,10 @@ fn LoadVKTuple() -> ((Window, EventLoop<()>), (Entry, Instance), PhysicalDevice,
     let VkSwapChainImages = VkSwapChain::GetSwapChainImages(&VkSwapChain.0, &VkSwapChain.1);
     let VkSwapChainImageViews = VkSwapChain::GetSwapChainImageViews(&VkDevice.0, &VkSwapChainImages, &VkSwapChainSettings);
     let VkBaseShaderStages = GetBaseShadersPipelineShaderStage(&VkDevice.0);
-    let VkGraphicsPipeline = GetGraphicsPipeline(&VkDevice.0, &VkBaseShaderStages, &VkSwapChainSettings);
+    let BaseVertShaderSetLayouts = vec![
+        VkShader::GetBaseVertShaderDescriptorSetLayout(&VkDevice.0)
+    ];
+    let VkGraphicsPipeline = GetGraphicsPipeline(&VkDevice.0, &VkBaseShaderStages, &VkSwapChainSettings, &BaseVertShaderSetLayouts);
     let VkSwapChainFrameBuffers = VkFrameBuffer::GetSwapChainFrameBuffers(&VkDevice.0, &VkSwapChainImageViews, &VkGraphicsPipeline.1, &VkSwapChainSettings);
     let VkCommandPool = VkCommand::GetCommandPool(&VkDevice.0, &VkDevice.1);
     let mut VertexBuffers = vec![];
