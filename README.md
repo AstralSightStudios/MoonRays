@@ -1,5 +1,7 @@
 # MoonRays
 A Next-Gen game engine powered by vulkan
+# ⚠️ In-Development Project WARNING ⚠️
+## The project is still in the development stage, which means it cannot be compiled and used normally, and it is still far from the target effect. We are currently focusing on 2D rendering and our goal is to develop a full 2D game using this engine, so stay tuned!
 ## 编译与开发
 需要`nightly`版本的rust toolchain
 安装：
