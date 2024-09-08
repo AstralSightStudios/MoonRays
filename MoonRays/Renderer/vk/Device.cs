@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using MoonRays.Tools;
+using Serilog;
 using Silk.NET.Vulkan;
 
 namespace MoonRays.Renderer.vk;
@@ -20,7 +21,9 @@ public static class VkDevice
             {
                 SType = StructureType.DeviceCreateInfo,
                 PQueueCreateInfos = pQueueCreateInfos,
-                QueueCreateInfoCount = (uint)queueCreateInfos.Count
+                QueueCreateInfoCount = (uint)queueCreateInfos.Count,
+                PpEnabledExtensionNames = NativeType.ConvertStringListToBytePointerArray(Config.Engine.Config.RendererSettings.VkDeviceEnabledExtensions),
+                EnabledExtensionCount = (uint)Config.Engine.Config.RendererSettings.VkDeviceEnabledExtensions.Count,
             };
 
             fixed (Device* devicePtr = &VulkanRenderer.Device)

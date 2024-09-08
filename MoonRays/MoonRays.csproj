@@ -25,4 +25,23 @@
       <Folder Include="Exception\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="Renderer\vk\GraphicsPipeline.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Shaders\testvert.glsl">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Shaders\testfrag.glsl">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Shaders\testfrag.spirv">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Shaders\testvert.spirv">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

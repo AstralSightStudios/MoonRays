@@ -16,10 +16,15 @@ public static class VulkanRenderer
     public static DeviceQueues DeviceQueues;
     public static SurfaceKHR SurfaceKHR;
     public static KhrSurface SurfaceInstance;
+    public static SwapchainKHR SwapchainKHR;
+    public static KhrSwapchain SwapchainInstance;
+    public static List<Image> SwapchainImages;
+    public static List<ImageView> SwapchainImageViews = new();
     
     public static void Init()
     {
         _vkApi = Silk.NET.Vulkan.Vk.GetApi();
+        
         VkInstance.Create();
         GetApi().TryGetInstanceExtension(Instance, out SurfaceInstance);
         VkPhysicalDevice.Create();
@@ -28,6 +33,9 @@ public static class VulkanRenderer
         var queueCreateInfos = VkQueueFamily.GetQueueCreateInfos();
         VkDevice.Create(queueCreateInfos);
         VkDevice.GetDeviceQueues();
+        GetApi().TryGetDeviceExtension(Instance, Device, out SwapchainInstance);
+        VkSwapChain.Create();
+        VkImageViews.Create();
     }
 
     public static Vk VkApi()

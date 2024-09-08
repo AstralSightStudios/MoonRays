@@ -22,13 +22,17 @@ public class WindowSettings
 
 public class RendererSettings
 {
-    public List<string> VkEnabledLayers = new List<string>()
+    public readonly List<string> VkEnabledLayers = new List<string>()
     {
         "VK_LAYER_KHRONOS_validation"
     };
-    public List<string> VkEnabledExtensions = new List<string>()
+    public readonly List<string> VkEnabledExtensions = new List<string>()
     {
         "VK_EXT_debug_utils"
+    };
+    public readonly List<string> VkDeviceEnabledExtensions = new List<string>()
+    {
+        "VK_KHR_swapchain"
     };
 }
 
@@ -40,7 +44,15 @@ public static class Engine
     {
         if (File.Exists("engine_config.json"))
         {
-            Config = Newtonsoft.Json.JsonConvert.DeserializeObject<EngineConfig>(File.ReadAllText("engine_config.json"));
+            var readResult = Newtonsoft.Json.JsonConvert.DeserializeObject<EngineConfig>(File.ReadAllText("engine_config.json"));
+            if (readResult != null)
+            {
+                Config = readResult;
+            }
+            else
+            {
+                throw new FileNotFoundException("Engine config file not found.");
+            }
         }
         else
         {
