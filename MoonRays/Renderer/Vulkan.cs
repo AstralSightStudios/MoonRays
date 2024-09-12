@@ -1,4 +1,5 @@
 ﻿using MoonRays.Renderer.vk;
+using MoonRays.Renderer.vk.GraphicsPipeline;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using static Silk.NET.Vulkan.Vk;
@@ -20,6 +21,8 @@ public static class VulkanRenderer
     public static KhrSwapchain SwapchainInstance;
     public static List<Image> SwapchainImages;
     public static List<ImageView> SwapchainImageViews = new();
+    public static RenderPass RenderPass;
+    public static Pipeline GraphicsPipeline;
     
     public static void Init()
     {
@@ -36,6 +39,7 @@ public static class VulkanRenderer
         GetApi().TryGetDeviceExtension(Instance, Device, out SwapchainInstance);
         VkSwapChain.Create();
         VkImageViews.Create();
+        VkPipeline.Create();
     }
 
     public static Vk VkApi()

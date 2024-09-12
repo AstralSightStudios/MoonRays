@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using Silk.NET.Vulkan;
 
 namespace MoonRays.Config;
 
@@ -6,6 +7,7 @@ public class EngineConfig
 {
     public readonly string GameName = "EMPTY";
     public readonly string GameVersion = "EMPTY";
+    public readonly GraphicsSettings GraphicsSettings = new GraphicsSettings();
     public readonly WindowSettings WindowSettings = new WindowSettings()
     {
         Width = 800,
@@ -36,13 +38,20 @@ public class RendererSettings
     };
 }
 
+public class GraphicsSettings
+{
+    public SampleCountFlags MultisampleRasterizationSamples = SampleCountFlags.Count16Bit;
+    public SampleCountFlags RenderPassColorSamples = SampleCountFlags.Count16Bit;
+}
+
 public static class Engine
 {
+    private static readonly bool DebugSettingsAlwaysUseDefaultConfig = true;
     public static EngineConfig Config = new EngineConfig();
 
     public static void LoadConfig()
     {
-        if (File.Exists("engine_config.json"))
+        if (File.Exists("engine_config.json") && !DebugSettingsAlwaysUseDefaultConfig)
         {
             var readResult = Newtonsoft.Json.JsonConvert.DeserializeObject<EngineConfig>(File.ReadAllText("engine_config.json"));
             if (readResult != null)
@@ -56,6 +65,7 @@ public static class Engine
         }
         else
         {
+            File.WriteAllText("engine_config.json", Newtonsoft.Json.JsonConvert.SerializeObject(Config, Newtonsoft.Json.Formatting.Indented));
             Log.Warning("[Load Config] Engine config file is empty, so a default config is used.");
         }
         
