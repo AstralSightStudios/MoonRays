@@ -86,8 +86,8 @@ public static class VkSwapChain
         }
         else
         {
-            int width, height;
-            Window.Main.glfw.GetFramebufferSize(Window.Main.window, out width, out height);
+            int width = 0, height = 0;
+            Window.Main.sdl.VulkanGetDrawableSize(Window.Main.window, ref width, ref height);
             
             Extent2D extent = new Extent2D()
             {

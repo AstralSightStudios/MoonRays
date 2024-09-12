@@ -1,6 +1,8 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices;
+using System.Text;
 using MoonRays.Tools;
 using Serilog;
+using Silk.NET.SDL;
 using Silk.NET.Vulkan;
 
 namespace MoonRays.Renderer.vk;
@@ -25,7 +27,17 @@ public static unsafe class VkInstance
     public static List<String> GetWindowExtensions()
     {
         uint count = 0;
-        var extensions = NativeType.BytePtrPtrToStringList(Window.Main.glfw.GetRequiredInstanceExtensions(out count), (int)count);
+        byte** placeholder = null;
+        var result = Window.Main.sdl.VulkanGetInstanceExtensions(Window.Main.window, &count, placeholder);
+        
+        if (result == SdlBool.False)
+        {
+            throw new Exception($"Failed to get window extensions ({count})");
+        }
+        
+        var extensionsArray = new string[count];
+        Window.Main.sdl.VulkanGetInstanceExtensions(Window.Main.window, &count, extensionsArray);
+        var extensions = new List<String>(extensionsArray);
         
         Log.Information("Available Window Extensions :");
         extensions.ForEach(extension => Log.Information("      - {ExtensionName}", extension));
