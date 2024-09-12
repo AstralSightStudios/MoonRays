@@ -11,7 +11,7 @@ public static class VkColorBlend
         {
             ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit |
                              ColorComponentFlags.ABit,
-            BlendEnable = new Bool32(false),
+            BlendEnable = false,
             SrcColorBlendFactor = BlendFactor.SrcAlpha,
             DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha,
             ColorBlendOp = BlendOp.Add,
@@ -23,14 +23,15 @@ public static class VkColorBlend
 
     public static unsafe PipelineColorBlendStateCreateInfo BuildStateCreateInfo()
     {
-        var attachment = BuildAttachmentState();
+        var attachments = new List<PipelineColorBlendAttachmentState>(){ BuildAttachmentState() }.ToArray();
+        fixed (PipelineColorBlendAttachmentState* attachmentsPtr = &attachments[0])
         return new PipelineColorBlendStateCreateInfo()
         {
             SType = StructureType.PipelineColorBlendStateCreateInfo,
             LogicOpEnable = false,
             LogicOp = LogicOp.Copy,
             AttachmentCount = 1,
-            PAttachments = &attachment,
+            PAttachments = attachmentsPtr,
         };
     }
 }
