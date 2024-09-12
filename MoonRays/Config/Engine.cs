@@ -5,7 +5,7 @@ namespace MoonRays.Config;
 
 public class EngineConfig
 {
-    public readonly string GameName = "EMPTY";
+    public readonly string GameName = "MoonRays Engine Development Environment";
     public readonly string GameVersion = "EMPTY";
     public readonly GraphicsSettings GraphicsSettings = new GraphicsSettings();
     public readonly WindowSettings WindowSettings = new WindowSettings()

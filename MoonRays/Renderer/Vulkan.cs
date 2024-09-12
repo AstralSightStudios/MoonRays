@@ -23,6 +23,7 @@ public static class VulkanRenderer
     public static List<ImageView> SwapchainImageViews = new();
     public static RenderPass RenderPass;
     public static Pipeline GraphicsPipeline;
+    public static List<Framebuffer> Framebuffers = new();
     
     public static void Init()
     {
@@ -40,6 +41,7 @@ public static class VulkanRenderer
         VkSwapChain.Create();
         VkImageViews.Create();
         VkPipeline.Create();
+        VkFramebuffers.Create();
     }
 
     public static Vk VkApi()
