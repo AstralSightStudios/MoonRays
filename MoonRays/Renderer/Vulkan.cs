@@ -10,6 +10,7 @@ namespace MoonRays.Renderer;
 public static class VulkanRenderer
 {
     private static Vk? _vkApi;
+    
     public static Instance Instance;
     public static PhysicalDevice PhysicalDevice;
     public static QueueFamilyIndices QueueFamilyIndices;
@@ -23,7 +24,9 @@ public static class VulkanRenderer
     public static List<ImageView> SwapchainImageViews = new();
     public static RenderPass RenderPass;
     public static Pipeline GraphicsPipeline;
-    public static List<Framebuffer> Framebuffers = new();
+    public static List<Framebuffer> SwapChainFramebuffers = new();
+    public static CommandPool CommandPool;
+    public static CommandBuffer CommandBuffer;
     
     public static void Init()
     {
@@ -42,6 +45,9 @@ public static class VulkanRenderer
         VkImageViews.Create();
         VkPipeline.Create();
         VkFramebuffers.Create();
+        VkCommandPool.Create();
+        VkCommandBuffer.Allocate();
+        VkSyncObjects.Create();
     }
 
     public static Vk VkApi()

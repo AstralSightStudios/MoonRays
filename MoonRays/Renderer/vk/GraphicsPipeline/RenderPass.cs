@@ -31,6 +31,16 @@ public static class VkRenderPass
             PColorAttachments = &colorAttachmentRef,
         };
 
+        var dependency = new SubpassDependency()
+        {
+            SrcSubpass = Vk.SubpassExternal,
+            DstSubpass = 0,
+            SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+            SrcAccessMask = 0,
+            DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+            DstAccessMask = AccessFlags.ColorAttachmentWriteBit
+        };
+
         var renderPassCreateInfo = new RenderPassCreateInfo()
         {
             SType = StructureType.RenderPassCreateInfo,
@@ -38,6 +48,8 @@ public static class VkRenderPass
             PAttachments = &colorAttachment,
             SubpassCount = 1,
             PSubpasses = &subpass,
+            DependencyCount = 1,
+            PDependencies = &dependency,
         };
         
         VulkanRenderer.VkApi().CreateRenderPass(VulkanRenderer.Device, &renderPassCreateInfo, null, out VulkanRenderer.RenderPass);

@@ -40,8 +40,8 @@ public class RendererSettings
 
 public class GraphicsSettings
 {
-    public SampleCountFlags MultisampleRasterizationSamples = SampleCountFlags.Count16Bit;
-    public SampleCountFlags RenderPassColorSamples = SampleCountFlags.Count16Bit;
+    public SampleCountFlags MultisampleRasterizationSamples = SampleCountFlags.Count1Bit;
+    public SampleCountFlags RenderPassColorSamples = SampleCountFlags.Count1Bit;
 }
 
 public static class Engine

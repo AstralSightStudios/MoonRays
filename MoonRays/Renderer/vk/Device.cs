@@ -9,6 +9,7 @@ public class DeviceQueues
     public Queue Graphics;
     public Queue Compute;
     public Queue Transfer;
+    public Queue Present;
 }
 
 public static class VkDevice
@@ -43,12 +44,15 @@ public static class VkDevice
         VulkanRenderer.VkApi().GetDeviceQueue(VulkanRenderer.Device, (uint)VulkanRenderer.QueueFamilyIndices.ComputeFamily, 0, out computeQueue);
         var transferQueue = new Queue();
         VulkanRenderer.VkApi().GetDeviceQueue(VulkanRenderer.Device, (uint)VulkanRenderer.QueueFamilyIndices.TransferFamily, 0, out transferQueue);
+        var presentQueue = new Queue();
+        VulkanRenderer.VkApi().GetDeviceQueue(VulkanRenderer.Device, (uint)VulkanRenderer.QueueFamilyIndices.PresentFamily, 0, out presentQueue);
 
         VulkanRenderer.DeviceQueues = new DeviceQueues()
         {
             Graphics = graphicsQueue,
             Compute = computeQueue,
-            Transfer = transferQueue
+            Transfer = transferQueue,
+            Present = presentQueue
         };
     }
 }

@@ -24,7 +24,7 @@ public static class VkColorBlend
     public static unsafe PipelineColorBlendStateCreateInfo BuildStateCreateInfo()
     {
         var attachments = new List<PipelineColorBlendAttachmentState>(){ BuildAttachmentState() }.ToArray();
-        fixed (PipelineColorBlendAttachmentState* attachmentsPtr = &attachments[0])
+        fixed (PipelineColorBlendAttachmentState* attachmentsPtr = attachments)
         return new PipelineColorBlendStateCreateInfo()
         {
             SType = StructureType.PipelineColorBlendStateCreateInfo,

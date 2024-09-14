@@ -1,6 +1,8 @@
 ﻿using MoonRays.Config;
+using MoonRays.Renderer.vk;
 using Serilog;
 using Silk.NET.SDL;
+using Version = Silk.NET.SDL.Version;
 
 namespace MoonRays.Window;
 
@@ -14,6 +16,10 @@ public static unsafe class Main
         sdl = Sdl.GetApi();
 
         sdl.Init(Sdl.InitVideo);
+
+        Version sdlVersion;
+        sdl.GetVersion(&sdlVersion);
+        Log.Information($"SDL initialized. Version: {sdlVersion.Major}.{sdlVersion.Minor}.{sdlVersion.Patch}");
         
         if (Engine.Config == null)
         {
@@ -52,6 +58,9 @@ public static unsafe class Loop
                     shouldClose = true;
                 }
             }
+            
+            Drawer.DrawFrame();
+            MoonRays.Renderer.VulkanRenderer.VkApi().DeviceWaitIdle(MoonRays.Renderer.VulkanRenderer.Device);
         }
         
         Log.Information("[RunLoop] Stopping Window Loop");

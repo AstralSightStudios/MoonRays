@@ -1,4 +1,5 @@
-﻿using Silk.NET.Vulkan;
+﻿using Serilog;
+using Silk.NET.Vulkan;
 
 namespace MoonRays.Renderer.vk;
 
@@ -28,8 +29,9 @@ public static class VkFramebuffers
                 
                 Framebuffer framebuffer;
                 VulkanRenderer.VkApi().CreateFramebuffer(VulkanRenderer.Device, &createInfo, null, &framebuffer);
+                Log.Information("Created framebuffer");
                 
-                VulkanRenderer.Framebuffers.Add(framebuffer);
+                VulkanRenderer.SwapChainFramebuffers.Add(framebuffer);
             }
         }
     }
