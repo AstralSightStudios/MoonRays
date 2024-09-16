@@ -1,18 +1,31 @@
-﻿using Silk.NET.Vulkan;
+﻿using MoonRays.Renderer.vk.Shader;
+using Silk.NET.Vulkan;
 
 namespace MoonRays.Renderer.vk.GraphicsPipeline;
 
-public static class VkVertexInput
+public static unsafe class VkVertexInput
 {
     public static PipelineVertexInputStateCreateInfo BuildVertexInputStateCreateInfo()
     {
-        return new PipelineVertexInputStateCreateInfo()
+        Shader.Vertex[] vertices = new Vertex[]
         {
-            SType = StructureType.PipelineVertexInputStateCreateInfo,
-            VertexBindingDescriptionCount = 0,
-            PVertexBindingDescriptions = null,
-            VertexAttributeDescriptionCount = 0,
-            PVertexAttributeDescriptions = null
+            new Vertex() { pos = { x = 0.0f, y = -0.5f }, color = { r = 1.0f, g = 0.0f, b = 0.0f } },
+            new Vertex() { pos = { x = 0.5f, y = 0.5f }, color = { r = 0.0f, g = 1.0f, b = 0.0f } },
+            new Vertex() { pos = { x = -0.5f, y = 0.5f }, color = { r = 0.0f, g = 0.0f, b = 1.0f } }
         };
+
+        VertexInputBindingDescription[] bindingDescriptions = new VertexInputBindingDescription[]{ VertexTools.GetBindingDescription() };
+        var attributeDescriptions = VertexTools.GetAttributeDescriptions().ToArray();
+        
+        fixed(VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
+        fixed(VertexInputBindingDescription* bindingDescriptionsPtr = bindingDescriptions)
+            return new PipelineVertexInputStateCreateInfo()
+            {
+                SType = StructureType.PipelineVertexInputStateCreateInfo,
+                VertexBindingDescriptionCount = 1,
+                PVertexBindingDescriptions = bindingDescriptionsPtr,
+                VertexAttributeDescriptionCount = (uint)attributeDescriptions.Length,
+                PVertexAttributeDescriptions = attributeDescriptionsPtr,
+            };
     }
 }

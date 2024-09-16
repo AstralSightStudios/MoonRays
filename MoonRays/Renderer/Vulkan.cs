@@ -29,6 +29,8 @@ public static class VulkanRenderer
     public static CommandPool CommandPool;
     public static CommandBuffer[] CommandBuffers = new CommandBuffer[Config.Engine.Config.GraphicsSettings.MaxFramesInFlight];
     
+    public static DescriptorPool DescriptorPool;
+    
     public static void Init()
     {
         _vkApi = Silk.NET.Vulkan.Vk.GetApi();
@@ -50,6 +52,8 @@ public static class VulkanRenderer
         VkCommandBuffer.Allocate();
         VkSyncObjects.Create();
 
+        VkDescriptorPool.Create();
+        
         if (Config.Feature.EnableImGui)
         {
             ImGui.Init();

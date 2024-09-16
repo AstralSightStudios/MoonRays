@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="GlmSharp" Version="0.9.8" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="Serilog" Version="4.0.2-dev-02226" />
       <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
@@ -23,7 +24,6 @@
 
     <ItemGroup>
       <Folder Include="Exceptions\" />
-      <Folder Include="Native\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -38,9 +38,6 @@
       </None>
       <None Update="Shaders\testvert.spirv">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-      <None Update="Native\libcimgui-win64.dll">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
 
