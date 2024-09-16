@@ -13,7 +13,7 @@ public static class AppInfo
                 SType = StructureType.ApplicationInfo,
                 PApplicationName = gameNamePtr,
                 PEngineName = engineNamePtr,
-                ApiVersion = new Silk.NET.Core.Version32(1, 3, 0)
+                ApiVersion = new Silk.NET.Core.Version32(1, 2, 0)
             };
         }
     }

@@ -55,29 +55,26 @@ public static unsafe class VkInstance
         ApplicationInfo appInfo = AppInfo.GetAppInfo();
         try
         {
-            fixed (Instance* instancePtr = &VulkanRenderer.Instance)
+            Log.Information("Creating Vk instance...");
+            var createInfo = new InstanceCreateInfo()
             {
-                Log.Information("Creating Vk instance...");
-                var createInfo = new InstanceCreateInfo()
-                {
-                    SType = StructureType.InstanceCreateInfo,
-                    PApplicationInfo = &appInfo,
-                    PpEnabledLayerNames =
-                        NativeType.ConvertStringListToBytePointerArray(Config.Engine.Config.RendererSettings
-                            .VkEnabledLayers),
-                    EnabledLayerCount = (uint)Config.Engine.Config.RendererSettings.VkEnabledLayers.Count,
-                    PpEnabledExtensionNames = NativeType.ConvertStringListToBytePointerArray(enabledExtensions),
-                    EnabledExtensionCount = (uint)enabledExtensions.Count
-                };
-                if (Config.Engine.Config.RendererSettings.VkEnabledLayers.Contains("VK_LAYER_KHRONOS_validation"))
-                {
-                    Log.Information("validation enabled, binding debug callback...");
-                    var dbgMessengerCreateInfo = DbgCallback.CreateInfoExt();
-                    createInfo.PNext = &dbgMessengerCreateInfo;
-                }
-                VulkanRenderer.VkApi().CreateInstance(createInfo, null, instancePtr);
-                Log.Information("Created Vk instance successfully");
+                SType = StructureType.InstanceCreateInfo,
+                PApplicationInfo = &appInfo,
+                PpEnabledLayerNames =
+                    NativeType.ConvertStringListToBytePointerArray(Config.Engine.Config.RendererSettings
+                        .VkEnabledLayers),
+                EnabledLayerCount = (uint)Config.Engine.Config.RendererSettings.VkEnabledLayers.Count,
+                PpEnabledExtensionNames = NativeType.ConvertStringListToBytePointerArray(enabledExtensions),
+                EnabledExtensionCount = (uint)enabledExtensions.Count
+            };
+            if (Config.Engine.Config.RendererSettings.VkEnabledLayers.Contains("VK_LAYER_KHRONOS_validation"))
+            {
+                Log.Information("validation enabled, binding debug callback...");
+                var dbgMessengerCreateInfo = DbgCallback.CreateInfoExt();
+                createInfo.PNext = &dbgMessengerCreateInfo;
             }
+            VulkanRenderer.VkApi().CreateInstance(createInfo, null, out VulkanRenderer.Instance);
+            Log.Information("Created Vk instance successfully");
         }
         catch (Exception ex)
         {

@@ -1,6 +1,8 @@
 ﻿using Serilog;
+using Silk.NET.SDL;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
+using Event = Silk.NET.SDL.Event;
 
 namespace MoonRays.Renderer.vk;
 
@@ -169,5 +171,41 @@ public static class VkSwapChain
             VulkanRenderer.SwapchainImages = new List<Image>(swapChainImages);
             Log.Information("Got Swapchain Images");
         }
+    }
+
+    public static unsafe void CleanUp()
+    {
+        foreach (var swapChainFramebuffer in VulkanRenderer.SwapChainFramebuffers)
+        {
+            VulkanRenderer.VkApi().DestroyFramebuffer(VulkanRenderer.Device, swapChainFramebuffer, null);
+        }
+        VulkanRenderer.SwapChainFramebuffers.Clear();
+        foreach (var swapchainImageView in VulkanRenderer.SwapchainImageViews)
+        {
+            VulkanRenderer.VkApi().DestroyImageView(VulkanRenderer.Device, swapchainImageView, null);
+        }
+        VulkanRenderer.SwapchainImageViews.Clear();
+        VulkanRenderer.SwapchainInstance.DestroySwapchain(VulkanRenderer.Device, VulkanRenderer.SwapchainKHR, null);
+    }
+
+    public static unsafe void ReCreate()
+    {
+        // 特殊情况：最小化处理
+        var flags = Window.Main.sdl.GetWindowFlags(Window.Main.window);
+        Log.Information($"[VkSwapChain.ReCreate] Now Window flag is: {flags}");
+        
+        Silk.NET.SDL.Event sdlEvent = new Event();
+        
+        while ((flags & (uint)WindowFlags.Minimized) != 0)
+        {
+            flags = Window.Main.sdl.GetWindowFlags(Window.Main.window);
+            Window.Main.sdl.PollEvent(ref sdlEvent);
+        }
+        
+        VulkanRenderer.VkApi().DeviceWaitIdle(VulkanRenderer.Device);
+        CleanUp();
+        Create();
+        VkImageViews.Create();
+        VkFramebuffers.Create();
     }
 }

@@ -1,5 +1,6 @@
 ﻿using MoonRays.Renderer.vk;
 using MoonRays.Renderer.vk.GraphicsPipeline;
+using MoonRays.UI.dev;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using static Silk.NET.Vulkan.Vk;
@@ -26,7 +27,7 @@ public static class VulkanRenderer
     public static Pipeline GraphicsPipeline;
     public static List<Framebuffer> SwapChainFramebuffers = new();
     public static CommandPool CommandPool;
-    public static CommandBuffer CommandBuffer;
+    public static CommandBuffer[] CommandBuffers = new CommandBuffer[Config.Engine.Config.GraphicsSettings.MaxFramesInFlight];
     
     public static void Init()
     {
@@ -48,6 +49,11 @@ public static class VulkanRenderer
         VkCommandPool.Create();
         VkCommandBuffer.Allocate();
         VkSyncObjects.Create();
+
+        if (Config.Feature.EnableImGui)
+        {
+            ImGui.Init();
+        }
     }
 
     public static Vk VkApi()

@@ -35,8 +35,13 @@ public static unsafe class Main
         
         window = sdl.CreateWindow(Engine.Config.GameName, Sdl.WindowposCentered, Sdl.WindowposCentered, Engine.Config.WindowSettings.Width, Engine.Config.WindowSettings.Height ,
             (uint)WindowFlags.Vulkan | (uint)WindowFlags.Shown);
-        
-        sdl.SetWindowResizable(window, SdlBool.False);
+
+        SdlBool resizable = SdlBool.False;
+        if (Config.Engine.Config.WindowSettings.Resizable)
+        {
+            resizable = SdlBool.True;
+        }
+        sdl.SetWindowResizable(window, resizable);
         Log.Information("[CreateWindow] Created Window");
     }
 }

@@ -8,22 +8,20 @@ public class EngineConfig
     public readonly string GameName = "MoonRays Engine Development Environment";
     public readonly string GameVersion = "EMPTY";
     public readonly GraphicsSettings GraphicsSettings = new GraphicsSettings();
-    public readonly WindowSettings WindowSettings = new WindowSettings()
-    {
-        Width = 800,
-        Height = 600
-    };
-    public readonly RendererSettings RendererSettings = new RendererSettings() {};
+    public readonly WindowSettings WindowSettings = new WindowSettings();
+    public readonly RendererSettings RendererSettings = new RendererSettings();
 }
 
 public class WindowSettings
 {
-    public int Width;
-    public int Height;
+    public int Width = 1280;
+    public int Height = 720;
+    public bool Resizable = true;
 }
 
 public class RendererSettings
 {
+    public bool ReCreateSwapChainWhenSuboptimal = false;
     public readonly List<string> VkEnabledLayers = new List<string>()
     {
         "VK_LAYER_KHRONOS_validation"
@@ -42,6 +40,7 @@ public class GraphicsSettings
 {
     public SampleCountFlags MultisampleRasterizationSamples = SampleCountFlags.Count1Bit;
     public SampleCountFlags RenderPassColorSamples = SampleCountFlags.Count1Bit;
+    public int MaxFramesInFlight = 2;
 }
 
 public static class Engine

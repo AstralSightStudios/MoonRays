@@ -23,10 +23,7 @@
 
     <ItemGroup>
       <Folder Include="Exceptions\" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Compile Remove="Renderer\vk\GraphicsPipeline.cs" />
+      <Folder Include="Native\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -41,6 +38,9 @@
       </None>
       <None Update="Shaders\testvert.spirv">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Native\libcimgui-win64.dll">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
 

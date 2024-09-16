@@ -12,10 +12,12 @@ public class VkCommandBuffer
             SType = StructureType.CommandBufferAllocateInfo,
             CommandPool = VulkanRenderer.CommandPool,
             Level = CommandBufferLevel.Primary,
-            CommandBufferCount = 1
+            CommandBufferCount = (uint)Config.Engine.Config.GraphicsSettings.MaxFramesInFlight
         };
         
-        VulkanRenderer.VkApi().AllocateCommandBuffers(VulkanRenderer.Device, &allocInfo, out VulkanRenderer.CommandBuffer);
+        fixed(CommandBuffer* commandBuffersPtr = VulkanRenderer.CommandBuffers)
+            VulkanRenderer.VkApi().AllocateCommandBuffers(VulkanRenderer.Device, &allocInfo, commandBuffersPtr);
+        
         Log.Information("Allocated Vulkan CommandBuffer");
     }
 

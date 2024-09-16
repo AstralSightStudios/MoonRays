@@ -6,9 +6,9 @@ namespace MoonRays.Renderer.vk;
 
 public static class VkSyncObjects
 {
-    public static Semaphore ImageAvailableSemaphore;
-    public static Semaphore RenderFinishedSemaphore;
-    public static Fence InFlightFence;
+    public static List<Semaphore> ImageAvailableSemaphores = new ();
+    public static List<Semaphore> RenderFinishedSemaphores = new ();
+    public static List<Fence> InFlightFences = new();
     
     public static unsafe void Create()
     {
@@ -21,11 +21,24 @@ public static class VkSyncObjects
             SType = StructureType.FenceCreateInfo,
             Flags = FenceCreateFlags.SignaledBit
         };
-        
-        VulkanRenderer.VkApi().CreateSemaphore(VulkanRenderer.Device, &semaphoreInfo, null, out ImageAvailableSemaphore);
-        VulkanRenderer.VkApi().CreateSemaphore(VulkanRenderer.Device, &semaphoreInfo, null, out RenderFinishedSemaphore);
-        VulkanRenderer.VkApi().CreateFence(VulkanRenderer.Device, &fenceInfo, null, out InFlightFence);
-        
+
+        for (var i = 0; i < Config.Engine.Config.GraphicsSettings.MaxFramesInFlight; i++)
+        {
+            Semaphore imageAvailableSemaphoreTmp;
+            Semaphore renderFinishedSemaphoreTmp;
+            Fence inFlightFenceTmp;
+            
+            VulkanRenderer.VkApi()
+                .CreateSemaphore(VulkanRenderer.Device, &semaphoreInfo, null, out imageAvailableSemaphoreTmp);
+            VulkanRenderer.VkApi()
+                .CreateSemaphore(VulkanRenderer.Device, &semaphoreInfo, null, out renderFinishedSemaphoreTmp);
+            VulkanRenderer.VkApi().CreateFence(VulkanRenderer.Device, &fenceInfo, null, out inFlightFenceTmp);
+            
+            ImageAvailableSemaphores.Add(imageAvailableSemaphoreTmp);
+            RenderFinishedSemaphores.Add(renderFinishedSemaphoreTmp);
+            InFlightFences.Add(inFlightFenceTmp);
+        }
+
         Log.Information("Created Sync Objects");
     }
 }
